@@ -750,4 +750,8 @@ body.modal-open { overflow: hidden; }
   .top-r { gap: 4px; }
   .sticky-actions { position: static; border-top: 0; padding-block: 0; }
 }
+.live .role-btn, .live [data-act="role-switch"] { display: none !important; }
+body.busy { cursor: progress; }
+body.busy .btn.primary, body.busy .modal-f .btn { opacity: .6; pointer-events: none; }
+.auth-one { max-width: 520px; margin: 0 auto; width: 100%; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

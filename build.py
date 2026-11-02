@@ -7,7 +7,8 @@ import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent
 SRC = ROOT / 'src'
-MODULES = ['01-data.js', '02-core.js', '03-ui.js', '04-pages-a.js', '05-pages-b.js', '06-pages-c.js', '07-main.js']
+MODULES = ['01-data.js', '02-core.js', '03-ui.js', '04-pages-a.js', '05-pages-b.js', '06-pages-c.js', '065-live.js', '07-main.js']
+SUPABASE_JS = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'
 
 css = (SRC / 'styles.css').read_text(encoding='utf-8')
 js = '\n'.join((SRC / m).read_text(encoding='utf-8') for m in MODULES)
@@ -38,6 +39,7 @@ html = f'''<!doctype html>
 <div id="modal" hidden></div>
 <div id="toasts" aria-live="polite"></div>
 <div id="tip" role="tooltip" hidden></div>
+<script src="{SUPABASE_JS}"></script>
 <script>
 "use strict";
 {js}

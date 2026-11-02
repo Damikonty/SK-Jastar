@@ -308,7 +308,7 @@ const rerender = () => render(true);
 function needLogin(msg = 'Войдите или зарегистрируйтесь, чтобы продолжить.') {
   return `<div class="page narrow">${emptyState('lock', 'Нужен вход в систему', msg, `<div class="btn-row center"><a class="btn primary" href="#login">${icon('login', 16)}Войти</a><a class="btn" href="#register">Зарегистрироваться</a></div>`)}</div>`;
 }
-const denied = (msg = 'Этот раздел доступен другой роли. Переключите демо-роль в верхней панели.') => `<div class="page narrow">${emptyState('lock', 'Недостаточно прав', msg, `<button class="btn" data-act="role-switch">${icon('swap', 16)}Сменить демо-роль</button>`)}</div>`;
+const denied = (msg = typeof LIVE !== 'undefined' && LIVE ? 'Этот раздел доступен другой роли. Роли назначает администратор платформы.' : 'Этот раздел доступен другой роли. Переключите демо-роль в верхней панели.') => `<div class="page narrow">${emptyState('lock', 'Недостаточно прав', msg, `<button class="btn" data-act="role-switch">${icon('swap', 16)}Сменить демо-роль</button>`)}</div>`;
 const guardLogin = () => (me() ? null : needLogin());
 const guardRoles = (...roles) => () => (!me() ? needLogin() : roles.includes(myRole()) ? null : denied());
 
@@ -343,7 +343,7 @@ function renderTop() {
       <div class="lang" role="group" aria-label="Язык интерфейса">${[['ru', 'RU'], ['kk', 'ҚАЗ'], ['en', 'EN']].map(([k, l]) => `<button data-act="lang" data-v="${k}" class="${DB.lang === k ? 'on' : ''}">${l}</button>`).join('')}</div>
       <button class="btn sm ghost role-btn" data-act="role-switch" title="Демо: посмотреть платформу глазами другой роли">${icon('swap', 15)}<span>${esc(ROLES[myRole()].short)}</span></button>
       ${u ? `<a class="icon-btn bell" href="#notifications" aria-label="${esc(t('notifications'))}">${icon('bell', 19)}${unread ? `<b>${unread > 9 ? '9+' : unread}</b>` : ''}</a>
-        <a class="me-chip" href="#me" title="${esc(u.name)}">${avatar(u, 30)}<span class="hide-s"><b>${esc(u.name.split(' ')[1] || u.name)}</b></span></a>`
+        <a class="me-chip" href="#me" title="${esc(u.name)}">${avatar(u, 30)}<span class="hide-s"><b>${esc(u.name.split(' ')[1] || u.name)}</b></span></a>${typeof LIVE !== 'undefined' && LIVE ? `<button class="icon-btn" data-act="logout" aria-label="${esc(t('logout'))}" title="${esc(t('logout'))}">${icon('logout', 18)}</button>` : ''}`
       : `<a class="btn sm" href="#login">${esc(t('login'))}</a><a class="btn sm primary hide-s" href="#register">${esc(t('register'))}</a>`}
     </div>`;
   hydrateMedia($('#top'));

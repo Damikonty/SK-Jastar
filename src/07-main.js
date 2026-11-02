@@ -105,6 +105,11 @@ window.addEventListener('hashchange', () => render());
 window.addEventListener('resize', debounce(drawCharts, 160));
 
 function boot() {
+  if (LIVE) { liveBoot(); return; }
+  if (LIVE_EXPECTED) {
+    $('#main').innerHTML = `<div class="page narrow">${emptyState('alert', 'Не удалось загрузить модуль подключения к базе', 'Проверьте интернет-соединение или отключите блокировщик скриптов и обновите страницу.', '<button class="btn" onclick="location.reload()">Обновить</button>')}</div>`;
+    return;
+  }
   loadDB();
   initTips();
   render();

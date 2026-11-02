@@ -552,6 +552,14 @@ async function resizeImage(file, max = 1280, q = 0.82) {
     return await new Promise((res) => c.toBlob((b) => res(b || file), 'image/jpeg', q));
   } catch (e) { return file; } finally { URL.revokeObjectURL(url); }
 }
+/* Ключ файла: в демо — локальный ключ, в общей базе — путь в хранилище с папкой пользователя */
+function newMediaKey(name, kind) {
+  if (typeof LIVE !== 'undefined' && LIVE && me()) {
+    const ext = (String(name || '').match(/\.[a-z0-9]{1,6}$/i) || [''])[0].toLowerCase();
+    return (kind === 'avatar' ? 'avatars/' : 'files/') + me().id + '/' + uid('f') + ext;
+  }
+  return uid(kind === 'avatar' ? 'ava' : 'blob');
+}
 /* Приём файлов: фото сжимаются, видео до 40 МБ, документы до 15 МБ */
 async function acceptFiles(fileList, opts = {}) {
   const out = []; const errs = [];
@@ -560,9 +568,9 @@ async function acceptFiles(fileList, opts = {}) {
     const isVid = /^video\//.test(f.type);
     if (isVid && f.size > 40 * 1048576) { errs.push(`${f.name}: видео больше 40 МБ`); continue; }
     if (!isImg && !isVid && f.size > 15 * 1048576) { errs.push(`${f.name}: файл больше 15 МБ`); continue; }
-    const key = uid('blob');
+    const key = newMediaKey(isImg ? 'photo.jpg' : f.name);
     const blob = isImg ? await resizeImage(f, opts.max || 1280) : f;
-    await MEDIA.put(key, blob);
+    try { await MEDIA.put(key, blob); } catch (e) { errs.push(`${f.name}: не удалось загрузить (${e.message || e})`); continue; }
     const kind = opts.kind || (isImg ? 'photo' : isVid ? 'video' : /presentation|pptx?$/i.test(f.type + f.name) ? 'presentation' : 'doc');
     out.push({ id: uid('m'), kind, name: f.name, size: blob.size, key, type: f.type, uploadedAt: new Date().toISOString() });
   }

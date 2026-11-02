@@ -221,6 +221,12 @@ ACTIONS['member-reject'] = (el) => {
     commit(); rerender();
   }, true);
 };
+ACTIONS['council-role'] = (el) => {
+  const u = U(el.dataset.id); const v = el.value;
+  if (!u || !isChairOf(u.companyId)) return;
+  if (v === 'Председатель' && myRole() !== 'admin') { toast('Председателя назначает администратор', 'warn'); el.value = u.councilRole; return; }
+  u.councilRole = v; audit('Изменение должности в совете', 'user', u.id, `${u.name}: ${v}`); commit(); toast('Должность обновлена', 'good');
+};
 ACTIONS['company-edit'] = (el) => {
   const o = O(el.dataset.id);
   openModal({
@@ -367,8 +373,8 @@ ACTIONS['me-root'] = (el) => { UI.meRoot = el.value; rerender(); };
 UPLOAD.avatar = async (files) => {
   const f = files[0]; if (!f) return;
   if (!/^image\//.test(f.type)) { toast('Нужен файл изображения', 'bad'); return; }
-  const key = uid('ava');
-  await MEDIA.put(key, await resizeImage(f, 400, 0.86));
+  const key = newMediaKey('avatar.jpg', 'avatar');
+  try { await MEDIA.put(key, await resizeImage(f, 400, 0.86)); } catch (e) { toast('Не удалось загрузить фото: ' + (e.message || e), 'bad'); return; }
   if (UI.reg && CURRENT.name === 'register') { UI.reg.data.photo = key; rerender(); return; }
   const u = me(); u.photo = key; audit('Обновление фотографии профиля', 'user', u.id, ''); commit(); toast('Фотография обновлена', 'good'); rerender();
 };

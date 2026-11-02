@@ -138,11 +138,11 @@ route('review', (id) => {
     const r = UI.rv;
     const avg = scoresAvg(r.scores);
     panel = `<form class="form" data-form="review" data-id="${x.id}">
-      ${tp !== 'achievement' ? crit.map(([k, l, h]) => `<div class="crit"><label for="rv-${k}"><b>${l}</b><small>${h}</small></label><input type="range" id="rv-${k}" min="0" max="10" step="0.5" value="${r.scores[k]}" data-bind="rv.scores.${k}" data-rerender="1"><output>${fmt1(r.scores[k])}</output></div>`).join('') + `<div class="avg-line">Средний балл: <b>${fmt1(avg)}</b>${tp === 'project' ? ` · качество с учётом KPI: <b>${fmt1(avg * (0.5 + 0.5 * Math.min(1, kpiCompletion(x))))}</b>` : ''}</div>` : ''}
+      ${tp !== 'achievement' ? crit.map(([k, l, h]) => `<div class="crit"><label for="rv-c-${k}"><b>${l}</b><small>${h}</small></label><input type="range" id="rv-c-${k}" min="0" max="10" step="0.5" value="${r.scores[k]}" data-bind="rv.scores.${k}" data-rerender="1"><output>${fmt1(r.scores[k])}</output></div>`).join('') + `<div class="avg-line">Средний балл: <b>${fmt1(avg)}</b>${tp === 'project' ? ` · качество с учётом KPI: <b>${fmt1(avg * (0.5 + 0.5 * Math.min(1, kpiCompletion(x))))}</b>` : ''}</div>` : ''}
       <div class="form-grid">
-        ${tp === 'project' ? fld('Подтверждённый охват', inp('rv-reach', r.verifiedReach, 'type="number" min="0" data-bind="rv.verifiedReach"'), `Заявлено: ${fmt(x.reach)}`) : ''}
-        ${tp === 'event' ? fld('Подтверждённое число участников', inp('rv-att', r.verifiedAttended, 'type="number" min="0" data-bind="rv.verifiedAttended"'), `Заявлено: ${fmt(x.attended)}`) : ''}
-        ${(tp === 'project' && x.volunteerHours) || (tp === 'achievement' && x.hours) ? fld('Подтверждённые волонтёрские часы', inp('rv-hours', r.verifiedHours, 'type="number" min="0" data-bind="rv.verifiedHours"')) : ''}
+        ${tp === 'project' ? fld('Подтверждённый охват', inp('rv-vreach', r.verifiedReach, 'type="number" min="0" data-bind="rv.verifiedReach"'), `Заявлено: ${fmt(x.reach)}`) : ''}
+        ${tp === 'event' ? fld('Подтверждённое число участников', inp('rv-vatt', r.verifiedAttended, 'type="number" min="0" data-bind="rv.verifiedAttended"'), `Заявлено: ${fmt(x.attended)}`) : ''}
+        ${(tp === 'project' && x.volunteerHours) || (tp === 'achievement' && x.hours) ? fld('Подтверждённые волонтёрские часы', inp('rv-vhours', r.verifiedHours, 'type="number" min="0" data-bind="rv.verifiedHours"')) : ''}
       </div>
       ${fld('Комментарий и рекомендации', txa('rv-comment', r.comment, 3, 'data-bind="rv.comment" placeholder="Обязателен при отклонении и запросе уточнений"'))}
       <div class="btn-row"><button class="btn primary" type="submit" name="d" value="confirmed">${icon('check', 16)}Подтвердить</button><button class="btn" type="submit" name="d" value="needs_info">${icon('message', 16)}Запросить уточнения</button><button class="btn danger" type="submit" name="d" value="rejected">${icon('x', 16)}Отклонить</button></div>
@@ -238,7 +238,7 @@ ACTIONS['news-new'] = () => {
     } }]
   });
 };
-UPLOAD['news-cover'] = async (files) => { const f = files[0]; if (!f) return; const key = uid('cov'); await MEDIA.put(key, await resizeImage(f, 1400)); UI.nf.cover = key; const l = $('#nf-cover-l'); if (l) l.textContent = 'Обложка: ' + f.name; };
+UPLOAD['news-cover'] = async (files) => { const f = files[0]; if (!f) return; const key = newMediaKey('cover.jpg'); try { await MEDIA.put(key, await resizeImage(f, 1400)); } catch (e) { toast('Не удалось загрузить обложку', 'bad'); return; } UI.nf.cover = key; const l = $('#nf-cover-l'); if (l) l.textContent = 'Обложка: ' + f.name; };
 
 /* ============================ БАЗА ЗНАНИЙ ============================ */
 route('knowledge', () => {
@@ -470,7 +470,7 @@ route('admin', () => {
     const list = DB.ratingLog.filter((x) => x.kind === f.kind).slice().reverse().slice(0, 200);
     body = `<div class="filters">${seg('ah.kind', [['org', 'Советы'], ['person', 'Сотрудники']], f.kind)}</div>${card('История изменений рейтинга', list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Время</th><th>${f.kind === 'org' ? 'Совет' : 'Сотрудник'}</th><th class="num">Баллы</th><th class="num">Место</th><th>Причина</th></tr></thead><tbody>${list.map((x) => `<tr><td class="nowrap">${fmtDT(x.ts)}</td><td>${f.kind === 'org' ? orgLink(x.id) : userLink(U(x.id))}</td><td class="num">${fmt1(x.from)} → <b>${fmt1(x.to)}</b></td><td class="num">${x.rankFrom || '—'} → ${x.rankTo || '—'}</td><td>${esc(x.reason)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">История пока пуста. Она заполняется при каждом решении эксперта и изменении методики.</p>')}`;
   } else {
-    body = `<div class="grid g2">${card('Хранение данных', `<p>Демо-версия хранит данные в браузере: ${STORAGE_OK ? chip('сохранение работает', 'good') : chip('сохранение недоступно — данные живут до перезагрузки', 'warn')}</p><dl class="dl2"><div><dt>Пользователей</dt><dd>${DB.users.length}</dd></div><div><dt>Проектов</dt><dd>${DB.projects.length}</dd></div><div><dt>Мероприятий</dt><dd>${DB.events.length}</dd></div><div><dt>Записей аудита</dt><dd>${DB.audit.length}</dd></div></dl><p class="note">В рабочей версии данные хранятся в PostgreSQL (Supabase) с политиками RLS, файлы — в Supabase Storage. Схема базы данных приложена к проекту.</p>`)}
+    if (typeof LIVE !== 'undefined' && LIVE) body = liveDataTab(); else body = `<div class="grid g2">${card('Хранение данных', `<p>Демо-версия хранит данные в браузере: ${STORAGE_OK ? chip('сохранение работает', 'good') : chip('сохранение недоступно — данные живут до перезагрузки', 'warn')}</p><dl class="dl2"><div><dt>Пользователей</dt><dd>${DB.users.length}</dd></div><div><dt>Проектов</dt><dd>${DB.projects.length}</dd></div><div><dt>Мероприятий</dt><dd>${DB.events.length}</dd></div><div><dt>Записей аудита</dt><dd>${DB.audit.length}</dd></div></dl><p class="note">В рабочей версии данные хранятся в PostgreSQL (Supabase) с политиками RLS, файлы — в Supabase Storage. Схема базы данных приложена к проекту.</p>`)}
       ${card('Экспорт и сброс', `<div class="btn-row"><button class="btn" data-act="export-json">${icon('download', 16)}Экспорт всех данных (JSON)</button><button class="btn danger" data-act="reset-demo">${icon('refresh', 16)}Сбросить демо-данные</button></div><p class="note">Сброс удаляет все изменения в этом браузере и заново генерирует тестовые данные.</p>`)}</div>`;
   }
   return `<div class="page">${pageHead('Администрирование', 'Управление компаниями, пользователями, экспертами, критериями рейтинга и журналами', '', 'Главный администратор Фонда')}

@@ -93,6 +93,7 @@ async function liveLoad() {
     fetchAll('regions'), fetchAll('organizations'), fetchAll('profiles'), fetchAll('projects'), fetchAll('events'), fetchAll('achievements'),
     fetchAll('news'), fetchAll('knowledge'), fetchAll('settings'), fetchAll('rating_log', 'ts')
   ]);
+  const feedbackRows = await fetchAll('feedback', 'created_at').catch(() => []);
   let notifs = [], appeals = [], audits = [];
   if (uidNow) [notifs, appeals] = await Promise.all([fetchAll('notifications', 'ts'), fetchAll('appeals')]);
   const st = settingsRows[0] || {};
@@ -101,9 +102,9 @@ async function liveLoad() {
     version: SCHEMA_VERSION, seededAt: new Date().toISOString(), lang,
     regions: regions.map(ROW.region), orgs: orgs.map(ROW.org), users: profiles.map(ROW.user),
     projects: projects.map(ROW.project), events: events.map(ROW.event), achievements: achs.map(ROW.achievement),
-    news: news.map(ROW.news), knowledge: kb.map(ROW.kb), appeals: appeals.map(ROW.appeal),
+    news: news.map(ROW.news), knowledge: kb.map(ROW.kb), appeals: appeals.map(ROW.appeal), feedback: feedbackRows.map(ROW.feedback),
     notifications: notifs.map(ROW.notif), audit: [], ratingLog: rlog.map(ROW.rlog).reverse(),
-    settings: { wCompany: st.w_company || { projects: 25, reach: 20, social: 15, prof: 15, inter: 10, innov: 10, info: 5 }, wPerson: st.w_person || { contrib: 30, lead: 20, init: 20, volunteer: 10, inter: 10, prof: 10 }, infoCap: st.info_cap || 12 },
+    settings: { wCompany: st.w_company || { projects: 25, reach: 20, social: 15, prof: 15, inter: 10, innov: 10, info: 5 }, wPerson: st.w_person || { contrib: 30, lead: 20, init: 20, volunteer: 10, inter: 10, prof: 10 }, infoCap: st.info_cap || 12, contacts: st.contacts || {} },
     session: { userId: uidNow }, demoAccounts: {}
   };
   reindex();
@@ -258,7 +259,8 @@ function installLiveActions() {
   FORMS.profile = (form) => busy(async () => {
     const d = formData(form); const u = me();
     if (!d.name || !d.position) { toast('Заполните ФИО и должность', 'bad'); return; }
-    const data = { ...userData(u), name: d.name, position: d.position, dept: d.dept, city: d.city, startYear: +d.startYear || u.startYear, bio: d.bio, education: d.education, interests: d.interests, skills: String(d.skills || '').split(',').map((x) => x.trim()).filter(Boolean), sport: d.sport };
+    if (d.pc_email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.pc_email)) { toast('Проверьте рабочий e-mail', 'bad'); return; }
+    const data = { ...userData(u), contacts: { email: d.pc_email || '', phone: d.pc_phone || '', telegram: d.pc_tg || '' }, name: d.name, position: d.position, dept: d.dept, city: d.city, startYear: +d.startYear || u.startYear, bio: d.bio, education: d.education, interests: d.interests, skills: String(d.skills || '').split(',').map((x) => x.trim()).filter(Boolean), sport: d.sport };
     const org = d.companyId && d.companyId !== u.companyId ? d.companyId : null;
     putUser(await rpc('update_my_profile', { d: data, org, region: d.regionId || null }));
     UI.meRoot = null; toast('Профиль сохранён', 'good'); go('me');
@@ -543,7 +545,8 @@ async function seedLive() {
   const news = S.news.map((n) => ({ id: n.id, org_id: n.orgId, author_id: n.authorId, kind: n.kind, published: n.published, news_date: n.date, data: dataOf(n, ['id', 'orgId', 'authorId', 'kind', 'published', 'date', 'demo']), is_demo: true }));
   const kb = S.knowledge.map((k) => ({ id: k.id, org_id: k.orgId, author_id: me().id, kind: k.kind, data: dataOf(k, ['id', 'orgId', 'authorId', 'kind', 'demo']), is_demo: true }));
   const appeals = S.appeals.map((a) => ({ id: 'apdemo' + a.id, entity_type: a.entityType, entity_id: a.entityId, user_id: a.userId, reason: a.reason, status: a.status, resolution: a.resolution, ts: a.ts, is_demo: true }));
-  const batches = [['profiles', profiles], ['projects', projects], ['events', events], ['achievements', achs], ['news', news], ['knowledge', kb], ['appeals', appeals]];
+  const fbRows = (S.feedback || []).map((f) => ({ id: 'fbdemo' + f.id, user_id: f.userId, kind: f.kind, subject: f.subject || '', body: f.body, section: f.section, target_type: f.targetType, target_id: f.targetId, is_public: f.isPublic, status: f.status, reply: f.reply || '', replied_by: f.repliedBy ? me().id : null, replied_at: f.repliedAt, contact: f.contact || {}, is_demo: true, created_at: f.createdAt }));
+  const batches = [['profiles', profiles], ['projects', projects], ['events', events], ['achievements', achs], ['news', news], ['knowledge', kb], ['appeals', appeals], ['feedback', fbRows]];
   for (const [table, rows] of batches) {
     for (let i = 0; i < rows.length; i += 100) await tbl(sb.from(table).insert(rows.slice(i, i + 100)));
   }

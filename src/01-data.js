@@ -4,7 +4,7 @@
    В продакшене эти данные приходят из PostgreSQL (Supabase), см. schema.sql.
    ===================================================================== */
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 const REGIONS_SEED = [
   { id: 'ast', name: 'г. Астана', city: 'Астана', lon: 71.43, lat: 51.13 },
@@ -537,14 +537,42 @@ function seedDB() {
     tags: [KB_KINDS[kind]], content: kbContent(kind, title, desc), demo: true
   }));
 
+  /* --- обратная связь и благодарности (тестовые) --- */
+  const fbPool = users.filter((u) => ['member', 'chair', 'regional'].includes(u.role));
+  const memberDemo = users.find((u) => u.companyId === 'qg' && u.role === 'member');
+  const thanksTexts = [
+    'Спасибо за помощь с подготовкой отчёта по проекту — без вас мы бы не уложились в срок.',
+    'Благодарю за наставничество в первые месяцы работы: в процессах стало намного проще разобраться.',
+    'Спасибо, что организовали волонтёрский выезд и нашли транспорт для всей команды.',
+    'Благодарю за поддержку на хакатоне: ваш опыт помог довести идею до прототипа.',
+    'Спасибо за помощь с регистрацией участников форума и тёплую встречу гостей.',
+    'Благодарю за открытый обмен опытом между советами — забрали несколько идей к себе.'
+  ];
+  const feedback = [];
+  let fbN = 1;
+  const fbAdd = (o) => feedback.push({ id: 'fb' + fbN++, subject: '', section: null, targetType: null, targetId: null, isPublic: false, reply: '', repliedBy: null, repliedAt: null, contact: {}, demo: true, ...o });
+  thanksTexts.forEach((text, i) => {
+    const from = i === 0 ? memberDemo : pick(fbPool);
+    let to = pick(fbPool); if (to.id === from.id) to = fbPool[(fbPool.indexOf(to) + 1) % fbPool.length];
+    fbAdd({ userId: from.id, kind: 'thanks', body: text, targetType: 'user', targetId: i === 1 ? memberDemo.id : to.id, isPublic: true, status: 'published', createdAt: tsISO(-rint(1, 40)) });
+  });
+  fbAdd({ userId: pick(fbPool).id, kind: 'thanks', body: 'Спасибо Молодёжному совету KEGOC за открытый обмен практиками по наставничеству.', targetType: 'org', targetId: 'kegoc', isPublic: true, status: 'published', createdAt: tsISO(-12) });
+  fbAdd({ userId: pick(fbPool).id, kind: 'thanks', body: 'Спасибо команде платформы: подавать проекты на проверку стало намного проще.', targetType: 'platform', isPublic: true, status: 'published', createdAt: tsISO(-5) });
+  fbAdd({ userId: pick(fbPool).id, kind: 'suggestion', subject: 'Шаблон отчёта для мероприятий', body: 'Предлагаю добавить в базу знаний готовый шаблон отчёта по мероприятию с листом регистрации — сейчас каждый совет делает свой.', section: 'Мероприятия', status: 'done', reply: 'Спасибо! Шаблон добавлен в базу знаний.', repliedBy: admin.id, repliedAt: tsISO(-3), createdAt: tsISO(-9) });
+  fbAdd({ userId: pick(fbPool).id, kind: 'recommendation', subject: 'Напоминания о сроках проверки', body: 'Рекомендую присылать председателю напоминание, если заявка совета ждёт проверки дольше недели.', section: 'Экспертиза', status: 'in_work', createdAt: tsISO(-4) });
+  fbAdd({ userId: memberDemo.id, kind: 'question', subject: 'Как учитываются совместные проекты', body: 'Если проект делали три компании, баллы получает только инициатор или все участники?', section: 'Рейтинги', status: 'answered', reply: 'Баллы за межкорпоративное взаимодействие получают все компании-участники, баллы за результативность — совет-инициатор. Подробнее — на странице «Методика рейтинга».', repliedBy: admin.id, repliedAt: tsISO(-1), createdAt: tsISO(-2) });
+  fbAdd({ userId: null, kind: 'problem', subject: 'Не загружается фото с телефона', body: 'При загрузке фотографии профиля с телефона страница долго думает, и фото не появляется.', section: 'Личный кабинет', status: 'new', contact: { name: 'Гость (тест)', email: 'guest@example.com' }, createdAt: tsISO(-1) });
+  fbAdd({ userId: null, kind: 'suggestion', subject: 'Общий календарь на месяц', body: 'Хотелось бы видеть мероприятия всех советов в общем календаре на месяц вперёд и получать уведомления о новых.', section: 'Мероприятия', status: 'new', createdAt: tsISO(0) });
+
   const db = {
     version: SCHEMA_VERSION, seededAt: anchor.toISOString(), lang: 'ru',
-    regions, orgs, users, projects, events, achievements, news, knowledge,
+    regions, orgs, users, projects, events, achievements, news, knowledge, feedback,
     audit: [], appeals: [], notifications: [], ratingLog: [],
     settings: {
       wCompany: { projects: 25, reach: 20, social: 15, prof: 15, inter: 10, innov: 10, info: 5 },
       wPerson: { contrib: 30, lead: 20, init: 20, volunteer: 10, inter: 10, prof: 10 },
-      infoCap: 12
+      infoCap: 12,
+      contacts: {}
     },
     session: { userId: null },
     demoAccounts: {

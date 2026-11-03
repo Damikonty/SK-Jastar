@@ -167,7 +167,8 @@ route('company', (id) => {
       ${card('О компании и Молодёжном совете', `<p>${esc(o.about)}</p><dl class="dl2"><div><dt>Полное наименование</dt><dd>${esc(o.full)}</dd></div><div><dt>Отрасль</dt><dd>${esc(o.sector)}</dd></div><div><dt>Регион головного офиса</dt><dd>${esc((RG(o.regionId) || {}).name)}</dd></div><div><dt>Совет создан</dt><dd>${o.council.founded} г.</dd></div>${o.parentId ? `<div><dt>Входит в группу</dt><dd>${orgLink(o.parentId)}</dd></div>` : ''}</dl>`, own ? `<button class="btn sm ghost" data-act="company-edit" data-id="${id}">${icon('edit', 15)}Редактировать</button>` : '')}
       ${card('Подтверждённая активность по месяцам', chart('line', { labels: ms.map((m) => m.label), series: [{ name: 'Проекты', values: ms.map((m) => confP.filter((p) => p.end.slice(0, 7) === m.key).length) }, { name: 'Мероприятия', values: ms.map((m) => confE.filter((e) => e.date.slice(0, 7) === m.key).length) }], h: 220 }))}
     </div><div class="stack-v">
-      ${card('Председатель совета', chair ? `<a class="person-l" href="#person-${chair.id}">${avatar(chair, 64)}<span><b>${esc(chair.name)}</b><small>${esc(chair.position)}</small><small>Председатель Молодёжного совета</small></span></a>` : '<p class="muted">Не назначен</p>')}
+      ${card('Председатель совета', chair ? `<a class="person-l" href="#person-${chair.id}">${avatar(chair, 64)}<span><b>${esc(chair.name)}</b><small>${esc(chair.position)}</small><small>Председатель Молодёжного совета</small></span></a>${personContacts(chair) ? `<div class="chair-ct">${personContacts(chair)}</div>` : ''}` : '<p class="muted">Не назначен</p>')}
+      ${(() => { const th = fbList().filter((f) => f.kind === 'thanks' && f.targetType === 'org' && f.targetId === id && f.isPublic && f.status === 'published').sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))); return card(`Благодарности совету${th.length ? ' · ' + th.length : ''}`, (th.length ? `<div class="thx-list">${th.slice(0, 4).map((f) => thanksCard(f, true)).join('')}</div>` : '<p class="muted">Пока нет благодарностей</p>') + (me() ? `<button class="btn sm" data-act="thank-org" data-id="${id}">${icon('heart', 15)}Поблагодарить совет</button>` : '')); })()}
       ${card('Региональные представители', reps.length ? reps.map((x) => `<a class="person-s" href="#person-${x.id}">${avatar(x, 34)}<span><b>${esc(x.name)}</b><small>${esc((RG(x.regionId) || {}).name)}</small></span></a>`).join('') : '<p class="muted">Региональные представители не назначены</p>')}
       ${subs.length ? card('Дочерние организации', subs.map((s) => { const sr = rows.find((x) => x.orgId === s.id); return `<a class="person-s" href="#company-${s.id}">${orgLogo(s, 32)}<span><b>${esc(s.name)}</b><small>Место ${sr.rank} · ${fmt1(sr.total)} баллов</small></span></a>`; }).join('')) : ''}
     </div></div>`;
@@ -279,6 +280,8 @@ function personView(u, own) {
     </div><div class="stack-v">
       ${inRating && s ? card('Баллы по методике', `<div class="breakdown">${PERSON_COMPONENTS.map((c) => `<div class="bd" data-tip="${esc(c.hint)}"><span class="bd-l">${esc(c.name)} <small>${DB.settings.wPerson[c.k]}%</small></span>${bar(s.comps[c.k])}<span class="bd-v">${fmt(s.comps[c.k])}</span></div>`).join('')}</div><p class="note">Баллы начисляются только за подтверждённые активности и только в пределах личного вклада.</p>`) : card('Рейтинг', `<p class="muted">${u.role === 'expert' ? 'Независимые эксперты не участвуют в рейтинге.' : 'Администраторы не участвуют в рейтинге.'}</p>`)}
       ${badges.length ? card('Бейджи', `<div class="badges">${badges.map((b) => `<span class="badge">${icon(b.icon, 18)}${esc(b.label)}</span>`).join('')}</div>`) : ''}
+      ${personContacts(u) ? card('Контакты', personContacts(u)) : ''}
+      ${(() => { const th = fbList().filter((f) => f.kind === 'thanks' && f.targetType === 'user' && f.targetId === u.id && ((f.isPublic && f.status === 'published') || own || myRole() === 'admin')).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))); return th.length || (me() && !own) ? card(`Благодарности${th.length ? ' · ' + th.length : ''}`, (th.length ? `<div class="thx-list">${th.slice(0, 5).map((f) => thanksCard(f, true)).join('')}</div>` : '<p class="muted">Пока нет благодарностей</p>') + (me() && !own ? `<button class="btn sm" data-act="thank-user" data-id="${u.id}">${icon('heart', 15)}Поблагодарить</button>` : '')) : ''; })()}
     </div></div>`;
   } else if (tab === 'social') {
     const myProjects = DB.projects.filter((p) => p.team.some((x) => x.userId === u.id) && canSeeActivity(p)).sort((a, b) => b.end.localeCompare(a.end));
@@ -366,6 +369,13 @@ route('me-edit', () => {
       ${fld('Навыки и компетенции', inp('skills', (u.skills || []).join(', ')), 'Через запятую')}
       ${fld('Спортивная активность', inp('sport', u.sport))}
       ${fld('Должность в Молодёжном совете', `<input class="input" value="${esc(u.councilRole)}" disabled>`, 'Меняет председатель совета')}
+      <h3 class="fs">Контакты в профиле</h3>
+      <p class="note">Видны всем пользователям платформы. Укажите рабочие контакты, чтобы с вами могли связаться по проектам совета. Оставьте пустыми, если не хотите их показывать.</p>
+      <div class="form-grid">
+        ${fld('Рабочий e-mail', inp('pc_email', (u.contacts || {}).email || '', 'type="email" maxlength="160"'))}
+        ${fld('Рабочий телефон', inp('pc_phone', (u.contacts || {}).phone || '', 'type="tel" maxlength="40"'))}
+        ${fld('Telegram', inp('pc_tg', (u.contacts || {}).telegram || '', 'maxlength="60" placeholder="@username"'))}
+      </div>
       <div class="btn-row end"><a class="btn ghost" href="#me">Отмена</a><button class="btn primary" type="submit">${icon('check', 16)}Сохранить</button></div>
     </form></div>`;
 }, guardLogin);
@@ -382,6 +392,8 @@ FORMS.profile = (form) => {
   const d = formData(form); const u = me();
   if (!d.name || !d.position) { toast('Заполните ФИО и должность', 'bad'); return; }
   const prevCo = u.companyId;
+  if (d.pc_email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.pc_email)) { toast('Проверьте рабочий e-mail', 'bad'); return; }
+  u.contacts = { email: d.pc_email || '', phone: d.pc_phone || '', telegram: d.pc_tg || '' };
   Object.assign(u, { name: d.name, position: d.position, dept: d.dept, regionId: d.regionId, city: d.city, startYear: +d.startYear || u.startYear, bio: d.bio, education: d.education, interests: d.interests, skills: d.skills.split(',').map((x) => x.trim()).filter(Boolean), sport: d.sport });
   if (d.companyId && d.companyId !== prevCo) {
     u.companyId = d.companyId; u.verified = false; u.councilRejected = false; u.councilRole = 'Участник';

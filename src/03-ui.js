@@ -314,7 +314,7 @@ const guardRoles = (...roles) => () => (!me() ? needLogin() : roles.includes(myR
 
 /* ---------- оболочка ---------- */
 const NAV = [
-  { g: 'g_main', items: [['home', 'home'], ['companies', 'building'], ['people', 'users'], ['projects', 'folder'], ['events', 'calendar'], ['news', 'news'], ['knowledge', 'book']] },
+  { g: 'g_main', items: [['home', 'home'], ['companies', 'building'], ['people', 'users'], ['projects', 'folder'], ['events', 'calendar'], ['news', 'news'], ['knowledge', 'book'], ['feedback', 'message']] },
   { g: 'g_rating', items: [['rating', 'trophy'], ['leaders', 'award'], ['methodology', 'scale'], ['compare', 'compare']] },
   { g: 'g_work', items: [['me', 'user', () => !!me()], ['expert', 'shield', () => ['expert', 'admin'].includes(myRole())], ['analytics', 'chart', () => ['admin', 'chair', 'regional'].includes(myRole())], ['admin', 'settings', () => myRole() === 'admin']] }
 ];

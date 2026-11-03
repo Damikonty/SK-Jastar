@@ -465,6 +465,8 @@ route('admin', () => {
     if (f.q) list = list.filter((x) => norm(x.action + ' ' + x.details + ' ' + ((U(x.actorId) || {}).name || '')).includes(norm(f.q)));
     body = `<div class="filters"><div class="f-search">${icon('search', 16)}<input id="aa-q" type="search" placeholder="Действие, пользователь, объект" value="${esc(f.q)}" data-live="aa.q"></div>${sel('aa-role', [['', 'Все роли'], ...Object.entries(ROLES).map(([k, v]) => [k, v.name])], f.role, 'data-live="aa.role"')}<button class="btn ghost" data-act="audit-xlsx">${icon('download', 16)}Excel</button></div>
     ${card(`Журнал аудита · ${list.length} записей`, `<div class="tbl-wrap"><table class="tbl audit"><thead><tr><th>Время</th><th>Кто</th><th>Роль</th><th>Действие</th><th>Объект и детали</th></tr></thead><tbody>${list.slice(0, 200).map((x) => `<tr><td class="nowrap">${fmtDT(x.ts)}</td><td>${esc((U(x.actorId) || {}).name || 'Гость')}</td><td>${esc((ROLES[x.role] || {}).short || x.role)}</td><td><b>${esc(x.action)}</b></td><td><small>${esc(x.entityType)} · ${esc(x.entityId || '')}</small> ${esc(x.details)}</td></tr>`).join('')}</tbody></table></div><p class="note">Журнал только дополняется: записи нельзя изменить или удалить через интерфейс.</p>`)}`;
+  } else if (tab === 'feedback') {
+    body = adminFeedbackTab();
   } else if (tab === 'history') {
     const f = (UI.ah = { kind: 'org', ...(UI.ah || {}) });
     const list = DB.ratingLog.filter((x) => x.kind === f.kind).slice().reverse().slice(0, 200);
@@ -474,7 +476,7 @@ route('admin', () => {
       ${card('Экспорт и сброс', `<div class="btn-row"><button class="btn" data-act="export-json">${icon('download', 16)}Экспорт всех данных (JSON)</button><button class="btn danger" data-act="reset-demo">${icon('refresh', 16)}Сбросить демо-данные</button></div><p class="note">Сброс удаляет все изменения в этом браузере и заново генерирует тестовые данные.</p>`)}</div>`;
   }
   return `<div class="page">${pageHead('Администрирование', 'Управление компаниями, пользователями, экспертами, критериями рейтинга и журналами', '', 'Главный администратор Фонда')}
-    ${tabs('tabs.adm', [['orgs', 'Компании и регионы'], ['users', 'Пользователи и роли'], ['experts', 'Эксперты', unassigned || null], ['criteria', 'Критерии рейтинга'], ['appeals', 'Апелляции', openAppeals || null], ['audit', 'Журнал аудита'], ['history', 'История рейтинга'], ['data', 'Данные']], tab)}${body}</div>`;
+    ${tabs('tabs.adm', [['orgs', 'Компании и регионы'], ['users', 'Пользователи и роли'], ['experts', 'Эксперты', unassigned || null], ['criteria', 'Критерии рейтинга'], ['appeals', 'Апелляции', openAppeals || null], ['feedback', 'Обращения', fbList().filter((x) => x.status === 'new').length || null], ['audit', 'Журнал аудита'], ['history', 'История рейтинга'], ['data', 'Данные']], tab)}${body}</div>`;
 }, guardRoles('admin'));
 ACTIONS['org-young'] = (el) => {
   const o = O(el.dataset.id); const v = Math.max(1, Math.round(+el.value || 0));
@@ -581,7 +583,8 @@ route('methodology', () => {
       ['Эксперты независимы', 'Автоматическое назначение без конфликта интересов, декларация конфликтов, блокировка доступа и самоотвод'],
       ['Изменения рейтинга сохраняются', 'Каждое решение и изменение весов записывается в историю рейтинга и журнал аудита'],
       ['Оценку можно оспорить', 'Апелляция → решение администратора → повторная экспертиза другим экспертом'],
-      ['Методика открыта', 'Эта страница всегда показывает действующие веса и формулы']
+      ['Методика открыта', 'Эта страница всегда показывает действующие веса и формулы'],
+      ['Отзывы не влияют на баллы', 'Благодарности и обращения в разделе «Обратная связь» не участвуют в расчёте рейтинга']
     ].map(([a, b]) => `<tr><td><b>${a}</b></td><td>${b}</td></tr>`).join('')}</tbody></table></div>`)}
     ${card('Жизненный цикл проверки', `<ol class="flow">${steps.map(([s, d]) => `<li>${statusChip(s)}<span>${d}</span></li>`).join('')}</ol>`)}
     ${card('Процедура оспаривания', `<ol class="method"><li>Автор, руководитель или участник открывает активность и нажимает «Оспорить оценку», указывает основание.</li><li>Администратор Фонда рассматривает апелляцию и либо отклоняет её с обоснованием, либо назначает повторную экспертизу.</li><li>Повторную экспертизу проводит другой эксперт без конфликта интересов; новое решение пересчитывает рейтинг.</li><li>Все шаги видны заявителю в истории статусов и сохраняются в журнале аудита.</li></ol>`)}

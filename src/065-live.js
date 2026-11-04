@@ -397,7 +397,7 @@ function installLiveActions() {
     const u = me();
     openModal({
       title: 'Декларация конфликта интересов', wide: true,
-      body: `<p class="note">Отметьте организации, с которыми у вас есть конфликт интересов. Заявки этих организаций и их ДЗО вам назначаться не будут.</p><div class="checks">${DB.orgs.filter((o) => o.type !== 'subsidiary').map((o) => `<label class="check"><input type="checkbox" name="cf" value="${o.id}" ${(u.conflicts || []).includes(o.id) || u.companyId === o.id ? 'checked' : ''} ${u.companyId === o.id ? 'disabled' : ''}><span>${esc(o.full)}${u.companyId === o.id ? ' — ваша организация' : ''}</span></label>`).join('')}</div>`,
+      body: `<p class="note">Отметьте организации, с которыми у вас есть конфликт интересов. Заявки этих организаций и их филиалов вам назначаться не будут.</p><div class="checks">${DB.orgs.filter((o) => o.type !== 'subsidiary').map((o) => `<label class="check"><input type="checkbox" name="cf" value="${o.id}" ${(u.conflicts || []).includes(o.id) || u.companyId === o.id ? 'checked' : ''} ${u.companyId === o.id ? 'disabled' : ''}><span>${esc(o.full)}${u.companyId === o.id ? ' — ваша организация' : ''}</span></label>`).join('')}</div>`,
       actions: [{ label: 'Отмена', cls: 'ghost', fn: closeModal }, { label: 'Сохранить декларацию', cls: 'primary', fn: () => busy(async () => {
         const n = await rpc('set_my_conflicts', { orgs: $$('input[name=cf]:checked:not(:disabled)').map((i) => i.value) });
         await liveLoad(); closeModal(); toast(n ? `Декларация сохранена, переназначено заявок: ${n}` : 'Декларация сохранена', 'good'); rerender();
@@ -449,7 +449,7 @@ function installLiveActions() {
     UI.nf = { cover: null };
     openModal({
       title: 'Новый материал', wide: true,
-      body: `<form class="form"><div class="form-grid">${fld('Тип материала', sel('nf-kind', Object.entries(NEWS_KINDS), 'news'))}${fld('Компания', sel('nf-org', orgs.map((o) => [o.id, o.name]), u.companyId && orgs.some((o) => o.id === u.companyId) ? u.companyId : orgs[0].id))}</div>${fld('Заголовок', inp('nf-title', '', 'maxlength="120" required'), '', true)}${fld('Лид', txa('nf-lead', '', 2, 'maxlength="240"'), 'Одно-два предложения о главном', true)}${fld('Текст', txa('nf-body', '', 7), 'Абзацы разделяйте пустой строкой', true)}<label class="drop">${icon('image', 20)}<span><b id="nf-cover-l">Обложка (необязательно)</b><small>JPG или PNG</small></span><input type="file" accept="image/*" hidden data-upload="news-cover"></label></form>`,
+      body: `<form class="form"><div class="form-grid">${fld('Тип материала', sel('nf-kind', Object.entries(NEWS_KINDS), 'news'))}${fld('Организация', sel('nf-org', orgs.map((o) => [o.id, o.name]), u.companyId && orgs.some((o) => o.id === u.companyId) ? u.companyId : orgs[0].id))}</div>${fld('Заголовок', inp('nf-title', '', 'maxlength="120" required'), '', true)}${fld('Лид', txa('nf-lead', '', 2, 'maxlength="240"'), 'Одно-два предложения о главном', true)}${fld('Текст', txa('nf-body', '', 7), 'Абзацы разделяйте пустой строкой', true)}<label class="drop">${icon('image', 20)}<span><b id="nf-cover-l">Обложка (необязательно)</b><small>JPG или PNG</small></span><input type="file" accept="image/*" hidden data-upload="news-cover"></label></form>`,
       actions: [{ label: 'Отмена', cls: 'ghost', fn: closeModal }, { label: 'Опубликовать', cls: 'primary', fn: () => busy(async () => {
         const title = $('#nf-title').value.trim(), lead = $('#nf-lead').value.trim(), body = $('#nf-body').value.trim();
         if (!title || !lead || !body) { toast('Заполните заголовок, лид и текст', 'bad'); return; }
@@ -462,7 +462,7 @@ function installLiveActions() {
   };
   ACTIONS['kb-new'] = () => openModal({
     title: 'Новый материал базы знаний', wide: true,
-    body: `<form class="form"><div class="form-grid">${fld('Тип', sel('kb-k', Object.entries(KB_KINDS), 'method'))}${fld('Компания', sel('kb-o', orgOptions(), me().companyId || 'sk'))}</div>${fld('Название', inp('kb-t', '', 'required'), '', true)}${fld('Краткое описание', inp('kb-d', ''), '', true)}${fld('Содержание', txa('kb-c', '', 8))}</form>`,
+    body: `<form class="form"><div class="form-grid">${fld('Тип', sel('kb-k', Object.entries(KB_KINDS), 'method'))}${fld('Организация', sel('kb-o', orgOptions(), me().companyId || headId()))}</div>${fld('Название', inp('kb-t', '', 'required'), '', true)}${fld('Краткое описание', inp('kb-d', ''), '', true)}${fld('Содержание', txa('kb-c', '', 8))}</form>`,
     actions: [{ label: 'Отмена', cls: 'ghost', fn: closeModal }, { label: 'Добавить', cls: 'primary', fn: () => busy(async () => {
       const title = $('#kb-t').value.trim(), desc = $('#kb-d').value.trim();
       if (!title || !desc) { toast('Заполните название и описание', 'bad'); return; }
@@ -490,7 +490,7 @@ function installLiveActions() {
     const d = formData(form);
     if (!d.name || !d.full || !(+d.young > 0)) { toast('Заполните название, полное наименование и численность', 'bad'); return; }
     const id = (d.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'org') + Math.random().toString(36).slice(2, 5);
-    const row = { id, type: d.type, parent_id: d.type === 'subsidiary' ? d.parentId : 'sk', name: d.name, full_name: d.full, region_id: d.regionId, sector: d.sector || '—', young: +d.young, about: `Молодёжный совет ${d.full}.` };
+    const row = { id, type: d.type, parent_id: d.type === 'subsidiary' ? d.parentId : headId(), name: d.name, full_name: d.full, region_id: d.regionId, sector: d.sector || '—', young: +d.young, about: `Молодёжный совет ${d.full}.` };
     await tbl(sb.from('organizations').insert(row));
     DB.orgs.push(ROW.org({ ...row, council: {} })); audit('Добавление организации', 'org', id, d.full); commit(); toast('Организация добавлена', 'good'); rerender();
   });

@@ -24,7 +24,7 @@ route('projects', () => {
     <div class="filters">
       <div class="f-search">${icon('search', 16)}<input id="pr-q" type="search" placeholder="Название, описание или компания" value="${esc(f.q)}" data-live="pr.q"></div>
       ${sel('pr-cat', catOptions('Все направления'), f.cat, 'data-live="pr.cat"')}
-      ${sel('pr-root', [['', 'Все компании'], ...DB.orgs.filter((o) => o.type !== 'subsidiary').map((o) => [o.id, o.name + ' и ДЗО'])], f.root, 'data-live="pr.root"')}
+      ${sel('pr-root', rootOptions('Все организации'), f.root, 'data-live="pr.root"')}
       ${sel('pr-region', regionOptions('Все регионы'), f.region, 'data-live="pr.region"')}
       ${sel('pr-sort', [['new', 'Сначала новые'], ['score', 'По оценке эксперта'], ['reach', 'По охвату']], f.sort, 'data-live="pr.sort" aria-label="Сортировка"')}
     </div>
@@ -111,14 +111,14 @@ ACTIONS['project-submit'] = (el) => {
 /* ---------- форма проекта ---------- */
 function blankProject() {
   const u = me();
-  const orgId = UI.pfOrg || (u.companyId && O(u.companyId) ? u.companyId : 'sk');
+  const orgId = UI.pfOrg || (u.companyId && O(u.companyId) ? u.companyId : headId());
   const s = new Date(); const e = new Date(); e.setMonth(e.getMonth() + 2);
   return { id: null, title: '', orgId, companyId: rootOf(orgId), regionId: u.regionId || 'ast', category: 'prof', start: isoDate(s), end: isoDate(e), leaderId: u.id, initiatorId: u.id, team: [{ userId: u.id, role: 'Руководитель проекта', share: 100 }], desc: '', goal: '', problem: '', participants: '', reach: '', volunteerHours: '', results: '', kpis: [{ name: '', unit: 'чел.', plan: '', fact: '' }], effectType: 'social', effect: '', media: [], partners: '', partnerOrgIds: [] };
 }
 function validateProject(p, full) {
   const e = [];
   if (!String(p.title || '').trim()) e.push('Название проекта');
-  if (!p.orgId) e.push('Компания-инициатор');
+  if (!p.orgId) e.push('Организация-инициатор');
   if (!full) return e;
   if (!p.start || !p.end || p.end < p.start) e.push('Сроки: дата завершения не раньше даты начала');
   ['desc', 'goal', 'problem', 'results', 'effect'].forEach((k) => { if (!String(p[k] || '').trim()) e.push({ desc: 'Описание', goal: 'Цель и задачи', problem: 'Проблема', results: 'Фактические результаты', effect: 'Социальный или экономический эффект' }[k]); });
@@ -155,8 +155,8 @@ function projectForm(existing) {
       <section class="card pad"><h3 class="fs">1. Основное</h3>
         ${fld('Название проекта', inp('pf-title', p.title, 'data-bind="pf.title" required maxlength="140"'), '', true)}
         <div class="form-grid">
-          ${fld('Компания-инициатор', sel('pf-company', roots.map((o) => [o.id, o.name]), p.companyId, 'data-act-change="pf-company"'), '', true)}
-          ${fld('Дочерняя организация', sel('pf-org', [[p.companyId, '— Головная компания —'], ...subs.map((o) => [o.id, o.name])], p.orgId, 'data-bind="pf.orgId"'), 'Совет, который реализует проект')}
+          ${fld('Организация-инициатор', sel('pf-company', roots.map((o) => [o.id, o.name]), p.companyId, 'data-act-change="pf-company"'), '', true)}
+          ${subs.length ? fld('Подразделение', sel('pf-org', [[p.companyId, '— ' + orgLabel(p.companyId) + ' —'], ...subs.map((o) => [o.id, o.name])], p.orgId, 'data-bind="pf.orgId"'), 'Совет, который реализует проект') : ''}
           ${fld('Регион', sel('pf-region', regionOptions(), p.regionId, 'data-bind="pf.regionId"'), '', true)}
           ${fld('Категория', sel('pf-cat', CATS.map((c) => [c.id, c.name]), p.category, 'data-bind="pf.category" data-rerender="1"'), '', true)}
           ${fld('Дата начала', inp('pf-start', p.start, 'type="date" data-bind="pf.start"'), '', true)}
@@ -294,7 +294,7 @@ route('events', () => {
   return `<div class="page">
     ${pageHead(t('events'), 'Календарь мероприятий Молодёжных советов: регистрация участников, итоги и подтверждение', can('event.create') ? `<a class="btn primary" href="#event-new" data-act="event-new">${icon('plus', 16)}Добавить мероприятие</a>` : '')}
     <div class="filters">${seg('ev.view', [['calendar', 'Календарь'], ['list', 'Список']], f.view)}
-      ${sel('ev-root', [['', 'Все компании'], ...DB.orgs.filter((o) => o.type !== 'subsidiary').map((o) => [o.id, o.name + ' и ДЗО'])], f.root, 'data-live="ev.root"')}
+      ${sel('ev-root', rootOptions('Все организации'), f.root, 'data-live="ev.root"')}
       ${sel('ev-region', regionOptions('Все регионы'), f.region, 'data-live="ev.region"')}
       ${sel('ev-cat', catOptions('Все категории'), f.cat, 'data-live="ev.cat"')}</div>
     ${body}</div>`;
@@ -356,10 +356,10 @@ function eventForm(existing) {
   const u = me();
   if (!UI.ef || (existing && UI.ef.id !== existing.id) || (!existing && UI.ef.id)) {
     const d = new Date(); d.setDate(d.getDate() + 14);
-    UI.ef = existing ? JSON.parse(JSON.stringify(existing)) : { id: null, title: '', orgId: u.role === 'admin' ? 'sk' : u.companyId, regionId: u.regionId, date: isoDate(d), time: '15:00', place: '', category: 'prof', desc: '', organizers: [u.id], capacity: 50, registered: [], attended: 0, summary: '', media: [] };
+    UI.ef = existing ? JSON.parse(JSON.stringify(existing)) : { id: null, title: '', orgId: u.role === 'admin' ? headId() : u.companyId, regionId: u.regionId, date: isoDate(d), time: '15:00', place: '', category: 'prof', desc: '', organizers: [u.id], capacity: 50, registered: [], attended: 0, summary: '', media: [] };
   }
   const e = UI.ef;
-  const allowed = u.role === 'admin' ? DB.orgs : DB.orgs.filter((o) => rootOf(o.id) === rootOf(u.companyId));
+  const allowed = ['admin', 'regional'].includes(u.role) ? DB.orgs : DB.orgs.filter((o) => rootOf(o.id) === rootOf(u.companyId));
   const pool = DB.users.filter((x) => ['member', 'chair', 'regional'].includes(x.role) && rootOf(x.companyId) === rootOf(e.orgId) && !e.organizers.includes(x.id));
   return `<div class="page narrow">
     <nav class="crumbs"><a href="#events">${esc(t('events'))}</a> / <span>${existing ? 'Редактирование' : 'Новое мероприятие'}</span></nav>

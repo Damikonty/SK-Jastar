@@ -14,14 +14,14 @@ route('rating', () => {
   const pod = (r, cls) => r ? `<a class="pod ${cls}" href="#company-${r.orgId}"><span class="pod-n">${r.rank}</span>${orgLogo(O(r.orgId), 52)}<b>${esc(O(r.orgId).name)}</b><span class="pod-s">${fmt1(r.total)}<small> баллов</small></span><span class="pod-m">${pct(r.engagement)} вовлечённость · ${r.activities} ${plural(r.activities, 'активность', 'активности', 'активностей')}</span></a>` : '';
   const pLabel = PERIODS.find((p) => p.id === f.period).label.toLowerCase();
   return `<div class="page">
-    ${pageHead('ТОП Молодёжных советов группы Самрук-Қазына', `Баллы из 100 по открытой методике. Учитываются только подтверждённые экспертами активности, показатели нормированы по численности молодёжи. ${testChip()}`, `<button class="btn ghost" data-act="rt-export">${icon('download', 16)}Excel</button><a class="btn ghost" href="#methodology">${icon('scale', 16)}Методика</a>`, 'Рейтинг')}
+    ${pageHead('ТОП Молодёжных советов группы «Самрук-Энерго»', `Баллы из 100 по открытой методике. Учитываются только подтверждённые экспертами активности, показатели нормированы по численности молодёжи. ${testChip()}`, `<button class="btn ghost" data-act="rt-export">${icon('download', 16)}Excel</button><a class="btn ghost" href="#methodology">${icon('scale', 16)}Методика</a>`, 'Рейтинг')}
     <div class="filters">${seg('rt.period', PERIODS.map((p) => [p.id, p.label]), f.period)}
       ${sel('rt-region', regionOptions('Все регионы'), f.region, 'data-live="rt.region"')}
       ${sel('rt-cat', catOptions('Все категории деятельности'), f.cat, 'data-live="rt.cat"')}
-      ${sel('rt-level', [['all', 'Каждый совет отдельно'], ['groups', 'Портфельные компании вместе с ДЗО']], f.level, 'data-live="rt.level" aria-label="Уровень рейтинга"')}</div>
+      ${sel('rt-level', [['all', 'Каждый совет отдельно'], ['groups', 'ДЗО вместе с филиалами']], f.level, 'data-live="rt.level" aria-label="Уровень рейтинга"')}</div>
     ${top3.length ? `<div class="podium">${pod(top3[1], 'p2')}${pod(top3[0], 'p1')}${pod(top3[2], 'p3')}</div>` : ''}
     ${card('', `<div class="tbl-wrap"><table class="tbl rating"><thead><tr><th class="num">Место</th><th>Изм.</th><th>Молодёжный совет</th><th class="num">Баллы</th><th class="num">Подтв. активностей</th><th class="num">Охват</th><th class="num">Проектов</th><th>Динамика места</th><th></th></tr></thead><tbody>
-      ${shown.map((r) => { const o = O(r.orgId); const h = rankHistory(r.orgId, f.level); return `<tr class="${f.open === r.orgId ? 'open' : ''} ${r.rank <= 3 && r.total > 0 ? 'top' : ''}"><td class="num"><b class="rk">${r.rank}</b></td><td>${f.period === 'all' && !prev.size ? '' : delta(prev.get(r.orgId), r.rank)}</td><td><a class="tcell" href="#company-${o.id}">${orgLogo(o, 30)}<span><b>${esc(o.name)}</b><small>${o.type === 'subsidiary' ? 'ДЗО ' + esc(orgLabel(o.parentId)) : o.type === 'fund' ? 'Фонд' : 'Портфельная компания'} · ${fmt(r.size)} молодых</small></span></a></td><td class="num"><span class="sc">${bar(r.total)}<b>${fmt1(r.total)}</b></span></td><td class="num">${r.activities}</td><td class="num" title="Доля охваченных молодых сотрудников">${pct(r.engagement)}</td><td class="num">${r.projects}</td><td>${sparkline(h.map((x) => x.rank))}</td><td><button class="icon-btn" data-act="rt-open" data-id="${r.orgId}" aria-expanded="${f.open === r.orgId}" aria-label="Разбивка баллов">${icon('chevD', 16)}</button></td></tr>
+      ${shown.map((r) => { const o = O(r.orgId); const h = rankHistory(r.orgId, f.level); return `<tr class="${f.open === r.orgId ? 'open' : ''} ${r.rank <= 3 && r.total > 0 ? 'top' : ''}"><td class="num"><b class="rk">${r.rank}</b></td><td>${f.period === 'all' && !prev.size ? '' : delta(prev.get(r.orgId), r.rank)}</td><td><a class="tcell" href="#company-${o.id}">${orgLogo(o, 30)}<span><b>${esc(o.name)}</b><small>${esc(orgTypeLabel(o))} · ${fmt(r.size)} молодых</small></span></a></td><td class="num"><span class="sc">${bar(r.total)}<b>${fmt1(r.total)}</b></span></td><td class="num">${r.activities}</td><td class="num" title="Доля охваченных молодых сотрудников">${pct(r.engagement)}</td><td class="num">${r.projects}</td><td>${sparkline(h.map((x) => x.rank))}</td><td><button class="icon-btn" data-act="rt-open" data-id="${r.orgId}" aria-expanded="${f.open === r.orgId}" aria-label="Разбивка баллов">${icon('chevD', 16)}</button></td></tr>
         ${f.open === r.orgId ? `<tr class="detail"><td colspan="9"><div class="breakdown cols">${COMPANY_COMPONENTS.map((c) => `<div class="bd" data-tip="${esc(c.hint)}"><span class="bd-l">${esc(c.name)} <small>${DB.settings.wCompany[c.k]}%</small></span>${bar(r.comps[c.k])}<span class="bd-v">${fmt(r.comps[c.k])}<small> → ${fmt1((r.comps[c.k] * DB.settings.wCompany[c.k]) / 100)}</small></span></div>`).join('')}</div></td></tr>` : ''}`; }).join('')}
     </tbody></table></div>${rows.length > shown.length ? `<div class="more"><button class="btn" data-act="more" data-k="rt">Показать места ${shown.length + 1}–${Math.min(rows.length, shown.length + 30)}</button></div>` : ''}`)}
     <p class="note">Изменение позиции — относительно предыдущего периода такой же длины (${esc(pLabel)}). Для «Весь период» — относительно положения 30 дней назад. Нажмите ${icon('chevD', 12)}, чтобы увидеть разбивку баллов по 7 показателям.</p>
@@ -42,9 +42,9 @@ route('leaders', () => {
   const prev = prevRanks(personScores, opt, f.period);
   const pod = (r, cls) => { if (!r) return ''; const u = U(r.userId); return `<a class="pod ${cls}" href="#person-${u.id}"><span class="pod-n">${r.rank}</span>${avatar(u, 56)}<b>${esc(u.name)}</b><span class="pod-m">${esc(orgLabel(u.companyId))}</span><span class="pod-s">${fmt1(r.total)}<small> баллов</small></span></a>`; };
   return `<div class="page">
-    ${pageHead('ТОП-100 молодых лидеров группы Самрук-Қазына', `Индивидуальный рейтинг считает только личный вклад: долю участника в каждом подтверждённом проекте, руководство, инициативы и личные достижения. ${testChip()}`, `<button class="btn ghost" data-act="ld-export">${icon('download', 16)}Excel</button>`, 'Рейтинг')}
+    ${pageHead('ТОП-100 молодых лидеров группы «Самрук-Энерго»', `Индивидуальный рейтинг считает только личный вклад: долю участника в каждом подтверждённом проекте, руководство, инициативы и личные достижения. ${testChip()}`, `<button class="btn ghost" data-act="ld-export">${icon('download', 16)}Excel</button>`, 'Рейтинг')}
     <div class="filters">${seg('ld.period', PERIODS.map((p) => [p.id, p.label]), f.period)}
-      ${sel('ld-root', [['', 'Все компании'], ...DB.orgs.filter((o) => o.type !== 'subsidiary').map((o) => [o.id, o.name + ' и ДЗО'])], f.root, 'data-live="ld.root"')}
+      ${sel('ld-root', rootOptions('Все организации'), f.root, 'data-live="ld.root"')}
       ${sel('ld-region', regionOptions('Все регионы'), f.region, 'data-live="ld.region"')}</div>
     ${rows.length >= 3 ? `<div class="podium">${pod(rows[1], 'p2')}${pod(rows[0], 'p1')}${pod(rows[2], 'p3')}</div>` : ''}
     ${rows.length ? card('', `<div class="tbl-wrap"><table class="tbl rating"><thead><tr><th class="num">Место</th><th>Изм.</th><th>Сотрудник</th><th>Компания</th><th>Регион</th><th class="num">Подтв. проектов</th><th>Личный вклад</th><th class="num">Баллы</th><th>Достижения</th></tr></thead><tbody>
@@ -55,7 +55,7 @@ route('leaders', () => {
 ACTIONS['ld-export'] = () => {
   const f = UI.ld;
   const rows = personScores({ root: f.root, region: f.region, ...periodRange(f.period) }).filter((r) => r.total > 0).slice(0, 100);
-  exportXlsx(`JASTAR_ТОП-100_${f.period}.xlsx`, [{ name: 'ТОП-100', rows: [['ТЕСТОВЫЕ ДАННЫЕ ДЕМО-ВЕРСИИ'], ['Место', 'ФИО', 'Компания', 'Должность', 'Регион', 'Подтв. проектов', 'Средняя доля, %', 'Баллы', ...PERSON_COMPONENTS.map((c) => c.name)], ...rows.map((r) => { const u = U(r.userId); return [r.rank, u.name, orgLabel(u.companyId), u.position, (RG(u.regionId) || {}).name, r.projects, Math.round(r.avgShare), +r.total.toFixed(2), ...PERSON_COMPONENTS.map((c) => +r.comps[c.k].toFixed(1))]; })] }]);
+  exportXlsx(`JASTAR_ТОП-100_${f.period}.xlsx`, [{ name: 'ТОП-100', rows: [['ТЕСТОВЫЕ ДАННЫЕ ДЕМО-ВЕРСИИ'], ['Место', 'ФИО', 'Организация', 'Должность', 'Регион', 'Подтв. проектов', 'Средняя доля, %', 'Баллы', ...PERSON_COMPONENTS.map((c) => c.name)], ...rows.map((r) => { const u = U(r.userId); return [r.rank, u.name, orgLabel(u.companyId), u.position, (RG(u.regionId) || {}).name, r.projects, Math.round(r.avgShare), +r.total.toFixed(2), ...PERSON_COMPONENTS.map((c) => +r.comps[c.k].toFixed(1))]; })] }]);
 };
 
 /* ============================ НЕЗАВИСИМАЯ ЭКСПЕРТИЗА ============================ */
@@ -83,7 +83,7 @@ route('expert', () => {
   const conflicts = uniq([...(u.conflicts || []), ...(u.companyId ? [u.companyId] : [])]);
   return `<div class="page">
     ${pageHead('Кабинет независимого эксперта', admin ? 'Администратор видит все заявки и может переназначать экспертов.' : 'Проверка доказательств, оценка по критериям и решение по каждой заявке. Все действия фиксируются в журнале аудита.', '', 'Экспертиза')}
-    ${!admin ? `<div class="banner info">${icon('shield', 18)}<span><b>Конфликт интересов.</b> Вам не назначаются и не показываются заявки организаций: ${conflicts.length ? conflicts.map((c) => esc(orgLabel(c)) + (O(c) && O(c).type !== 'subsidiary' && c !== 'sk' ? ' и её ДЗО' : '')).join(', ') : 'нет задекларированных'}. <button class="lnk" data-act="ex-conflicts">Изменить декларацию</button></span></div>` : ''}
+    ${!admin ? `<div class="banner info">${icon('shield', 18)}<span><b>Конфликт интересов.</b> Вам не назначаются и не показываются заявки организаций: ${conflicts.length ? conflicts.map((c) => esc(orgLabel(c)) + (O(c) && O(c).type === 'portfolio' && childrenOf(c).length ? ' и её филиалы' : '')).join(', ') : 'нет задекларированных'}. <button class="lnk" data-act="ex-conflicts">Изменить декларацию</button></span></div>` : ''}
     <div class="kpis k4">${kpi('Новые заявки', fmt(sets.new.length), 'ожидают взятия в работу')}${kpi('В работе', fmt(sets.work.length))}${kpi('Ждут уточнений', fmt(sets.info.length), 'у авторов')}${kpi('Решено', fmt(sets.done.length), decided.length ? `средняя оценка ${fmt1(avg)}` : '')}</div>
     ${tabs('tabs.ex', [['new', 'Новые', sets.new.length], ['work', 'В работе', sets.work.length], ['info', 'Требуются уточнения', sets.info.length], ['done', 'Решённые', sets.done.length], ...(admin ? [] : [['free', 'Свободные заявки', free.length]])], tab)}
     ${list.length ? `<div class="card"><div class="qlist">${list.slice(0, 80).map(queueRow).join('')}</div></div>` : emptyState('check', 'Заявок нет', tab === 'new' ? 'Новые заявки появятся, когда авторы отправят активности на проверку.' : 'В этом разделе пусто.')}
@@ -93,7 +93,7 @@ ACTIONS['ex-conflicts'] = () => {
   const u = me();
   openModal({
     title: 'Декларация конфликта интересов', wide: true,
-    body: `<p class="note">Отметьте организации, с которыми у вас есть конфликт интересов (место работы, родственники, участие в проектах). Заявки этих организаций и их ДЗО вам назначаться не будут.</p><div class="checks">${DB.orgs.filter((o) => o.type !== 'subsidiary').map((o) => `<label class="check"><input type="checkbox" name="cf" value="${o.id}" ${(u.conflicts || []).includes(o.id) || u.companyId === o.id ? 'checked' : ''} ${u.companyId === o.id ? 'disabled' : ''}><span>${esc(o.full)}${u.companyId === o.id ? ' — ваша организация' : ''}</span></label>`).join('')}</div>`,
+    body: `<p class="note">Отметьте организации, с которыми у вас есть конфликт интересов (место работы, родственники, участие в проектах). Заявки этих организаций и их филиалов вам назначаться не будут.</p><div class="checks">${DB.orgs.filter((o) => o.type !== 'subsidiary').map((o) => `<label class="check"><input type="checkbox" name="cf" value="${o.id}" ${(u.conflicts || []).includes(o.id) || u.companyId === o.id ? 'checked' : ''} ${u.companyId === o.id ? 'disabled' : ''}><span>${esc(o.full)}${u.companyId === o.id ? ' — ваша организация' : ''}</span></label>`).join('')}</div>`,
     actions: [{ label: 'Отмена', cls: 'ghost', fn: closeModal }, { label: 'Сохранить декларацию', cls: 'primary', fn: () => {
       u.conflicts = $$('input[name=cf]:checked:not(:disabled)').map((i) => i.value);
       audit('Изменение декларации конфликта интересов', 'user', u.id, u.conflicts.map(orgLabel).join(', ') || 'нет');
@@ -229,7 +229,7 @@ ACTIONS['news-new'] = () => {
   UI.nf = { cover: null };
   openModal({
     title: 'Новый материал', wide: true,
-    body: `<form class="form" id="nf-form"><div class="form-grid">${fld('Тип материала', sel('nf-kind', Object.entries(NEWS_KINDS), 'news'))}${fld('Компания', sel('nf-org', orgs.map((o) => [o.id, o.name]), u.companyId && orgs.some((o) => o.id === u.companyId) ? u.companyId : orgs[0].id))}</div>${fld('Заголовок', inp('nf-title', '', 'maxlength="120" required'), '', true)}${fld('Лид', txa('nf-lead', '', 2, 'maxlength="240"'), 'Одно-два предложения о главном', true)}${fld('Текст', txa('nf-body', '', 7), 'Абзацы разделяйте пустой строкой', true)}<label class="drop">${icon('image', 20)}<span><b id="nf-cover-l">Обложка (необязательно)</b><small>JPG или PNG</small></span><input type="file" accept="image/*" hidden data-upload="news-cover"></label></form>`,
+    body: `<form class="form" id="nf-form"><div class="form-grid">${fld('Тип материала', sel('nf-kind', Object.entries(NEWS_KINDS), 'news'))}${fld('Организация', sel('nf-org', orgs.map((o) => [o.id, o.name]), u.companyId && orgs.some((o) => o.id === u.companyId) ? u.companyId : orgs[0].id))}</div>${fld('Заголовок', inp('nf-title', '', 'maxlength="120" required'), '', true)}${fld('Лид', txa('nf-lead', '', 2, 'maxlength="240"'), 'Одно-два предложения о главном', true)}${fld('Текст', txa('nf-body', '', 7), 'Абзацы разделяйте пустой строкой', true)}<label class="drop">${icon('image', 20)}<span><b id="nf-cover-l">Обложка (необязательно)</b><small>JPG или PNG</small></span><input type="file" accept="image/*" hidden data-upload="news-cover"></label></form>`,
     actions: [{ label: 'Отмена', cls: 'ghost', fn: closeModal }, { label: 'Опубликовать', cls: 'primary', fn: () => {
       const title = $('#nf-title').value.trim(), lead = $('#nf-lead').value.trim(), body = $('#nf-body').value.trim();
       if (!title || !lead || !body) { toast('Заполните заголовок, лид и текст', 'bad'); return; }
@@ -261,7 +261,7 @@ ACTIONS['kb-open'] = (el) => {
 };
 ACTIONS['kb-new'] = () => openModal({
   title: 'Новый материал базы знаний', wide: true,
-  body: `<form class="form"><div class="form-grid">${fld('Тип', sel('kb-k', Object.entries(KB_KINDS), 'method'))}${fld('Компания', sel('kb-o', orgOptions(), me().companyId || 'sk'))}</div>${fld('Название', inp('kb-t', '', 'required'), '', true)}${fld('Краткое описание', inp('kb-d', ''), '', true)}${fld('Содержание', txa('kb-c', '', 8))}</form>`,
+  body: `<form class="form"><div class="form-grid">${fld('Тип', sel('kb-k', Object.entries(KB_KINDS), 'method'))}${fld('Организация', sel('kb-o', orgOptions(), me().companyId || headId()))}</div>${fld('Название', inp('kb-t', '', 'required'), '', true)}${fld('Краткое описание', inp('kb-d', ''), '', true)}${fld('Содержание', txa('kb-c', '', 8))}</form>`,
   actions: [{ label: 'Отмена', cls: 'ghost', fn: closeModal }, { label: 'Добавить', cls: 'primary', fn: () => {
     const title = $('#kb-t').value.trim(), desc = $('#kb-d').value.trim();
     if (!title || !desc) { toast('Заполните название и описание', 'bad'); return; }
@@ -274,9 +274,9 @@ ACTIONS['kb-new'] = () => openModal({
 function analyticsScope() {
   const u = me(); const f = UI.an;
   let orgIds = DB.orgs.map((o) => o.id); let region = f.region; let label = 'Вся группа';
-  if (u.role === 'chair') { orgIds = familyOf(rootOf(u.companyId)); label = orgLabel(rootOf(u.companyId)) + ' и ДЗО'; }
+  if (u.role === 'chair') { orgIds = familyOf(rootOf(u.companyId)); label = groupName(O(rootOf(u.companyId))); }
   else if (u.role === 'regional') { region = u.regionId; label = RG(u.regionId).name + ' · все компании'; }
-  else if (f.root) { orgIds = familyOf(f.root); label = orgLabel(f.root) + ' и ДЗО'; }
+  else if (f.root) { orgIds = familyOf(f.root); label = groupName(O(f.root)); }
   if (region && u.role !== 'regional') label += ' · ' + RG(region).name;
   return { orgIds: new Set(orgIds), region, label };
 }
@@ -326,7 +326,7 @@ route('analytics', () => {
   return `<div class="page">
     ${pageHead('Аналитика', `Охват: <b>${esc(A.sc.label)}</b>${u.role === 'chair' ? ' (статистика вашей компании)' : u.role === 'regional' ? ' (региональная аналитика)' : ''} · ${testChip()}`, `<button class="btn ghost" data-act="an-xlsx">${icon('download', 16)}Excel</button><button class="btn primary" data-act="an-report">${icon('file', 16)}Квартальный отчёт</button>`, 'Для руководства')}
     <div class="filters">${seg('an.period', PERIODS.map((p) => [p.id, p.label]), f.period)}
-      ${u.role === 'admin' ? sel('an-root', [['', 'Вся группа'], ...DB.orgs.filter((o) => o.type !== 'subsidiary').map((o) => [o.id, o.name + ' и ДЗО'])], f.root, 'data-live="an.root"') + sel('an-region', regionOptions('Все регионы'), f.region, 'data-live="an.region"') : ''}</div>
+      ${u.role === 'admin' ? sel('an-root', rootOptions('Вся группа'), f.root, 'data-live="an.root"') + sel('an-region', regionOptions('Все регионы'), f.region, 'data-live="an.region"') : ''}</div>
     <div class="kpis k4">
       ${kpi('Молодых сотрудников', fmt(A.young), 'тестовая численность', 'users')}
       ${kpi('Доля вовлечённых', pct(A.young ? (A.unique / A.young) * 100 : 0), 'уникальный охват / численность', 'globe')}
@@ -359,7 +359,7 @@ function reportHTML(q) {
   const people = personScores(range).filter((r) => r.total > 0 && (A.sc.orgIds.has(U(r.userId).companyId)) && (!A.sc.region || U(r.userId).regionId === A.sc.region)).slice(0, 10);
   const rows = (arr) => arr.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('');
   return `<div class="report" id="report-node">
-    <div class="rp-h"><div>${brandMark(36)}</div><div><b>JASTAR HUB</b><span>Квартальный отчёт о деятельности Молодёжных советов группы АО «Самрук-Қазына»</span></div></div>
+    <div class="rp-h"><div>${brandMark(36)}</div><div><b>JASTAR HUB</b><span>Квартальный отчёт о деятельности Молодёжного совета группы компаний АО «Самрук-Энерго»</span></div></div>
     <h2>${esc(q.label)} · ${esc(A.sc.label)}</h2>
     <p class="rp-warn">ТЕСТОВЫЕ ДАННЫЕ ДЕМО-ВЕРСИИ. Отчёт сформирован автоматически ${fmtDT(new Date().toISOString())}. Показатели не являются официальными.</p>
     <h3>Ключевые показатели</h3>
@@ -432,8 +432,8 @@ route('admin', () => {
   const unassigned = [...DB.projects, ...DB.events, ...DB.achievements].filter((x) => ['submitted', 'in_review'].includes(x.status) && (!x.review || !x.review.expertId)).length;
   let body = '';
   if (tab === 'orgs') {
-    body = `${card('Организации и Молодёжные советы', `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Организация</th><th>Тип</th><th>Регион</th><th class="num">Молодёжь до 35</th><th class="num">В совете</th></tr></thead><tbody>${DB.orgs.map((o) => `<tr><td><a class="tcell" href="#company-${o.id}">${orgLogo(o, 28)}<span><b>${esc(o.name)}</b><small>${esc(o.full)}</small></span></a></td><td>${o.type === 'fund' ? 'Фонд' : o.type === 'portfolio' ? 'Портфельная' : 'ДЗО ' + esc(orgLabel(o.parentId))}</td><td>${esc(RG(o.regionId).name)}</td><td class="num"><input class="input num sm" type="number" min="1" value="${o.young}" aria-label="Численность молодёжи" data-act-change="org-young" data-id="${o.id}"></td><td class="num">${councilMembers(o.id).filter((u) => u.verified).length}</td></tr>`).join('')}</tbody></table></div><p class="note">Численность молодёжи используется для нормирования рейтинга. Изменение пересчитывает рейтинг и записывается в историю.</p>`)}
-    <div class="grid g2">${card('Добавить организацию', `<form class="form" data-form="org-add"><div class="form-grid">${fld('Тип', sel('type', [['portfolio', 'Портфельная компания'], ['subsidiary', 'Дочерняя организация']], 'subsidiary'))}${fld('Головная компания (для ДЗО)', sel('parentId', DB.orgs.filter((o) => o.type === 'portfolio').map((o) => [o.id, o.name])))}</div>${fld('Краткое название', inp('name', '', 'required'), '', true)}${fld('Полное наименование', inp('full', '', 'required placeholder="АО «…»"'), '', true)}<div class="form-grid">${fld('Регион', sel('regionId', regionOptions()))}${fld('Молодёжь до 35 лет', inp('young', '', 'type="number" min="1" required'), '', true)}</div>${fld('Отрасль', inp('sector', ''))}<button class="btn primary" type="submit">${icon('plus', 16)}Добавить</button></form><p class="note">Новые компании, ДЗО и регионы добавляются без изменения архитектуры: организация сразу появляется в каталоге, формах и рейтинге.</p>`)}
+    body = `${card('Организации и Молодёжные советы', `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Организация</th><th>Тип</th><th>Регион</th><th class="num">Молодёжь до 35</th><th class="num">В совете</th></tr></thead><tbody>${DB.orgs.map((o) => `<tr><td><a class="tcell" href="#company-${o.id}">${orgLogo(o, 28)}<span><b>${esc(o.name)}</b><small>${esc(o.full)}</small></span></a></td><td>${esc(orgTypeLabel(o))}</td><td>${esc(RG(o.regionId).name)}</td><td class="num"><input class="input num sm" type="number" min="1" value="${o.young}" aria-label="Численность молодёжи" data-act-change="org-young" data-id="${o.id}"></td><td class="num">${councilMembers(o.id).filter((u) => u.verified).length}</td></tr>`).join('')}</tbody></table></div><p class="note">Численность молодёжи используется для нормирования рейтинга. Изменение пересчитывает рейтинг и записывается в историю.</p>`)}
+    <div class="grid g2">${card('Добавить организацию', `<form class="form" data-form="org-add"><div class="form-grid">${fld('Тип', sel('type', [['portfolio', 'Дочерняя / зависимая организация (ДЗО)'], ['subsidiary', 'Филиал ДЗО']], 'portfolio'))}${fld('ДЗО (для филиала)', sel('parentId', DB.orgs.filter((o) => o.type === 'portfolio').map((o) => [o.id, o.name])))}</div>${fld('Краткое название', inp('name', '', 'required'), '', true)}${fld('Полное наименование', inp('full', '', 'required placeholder="АО «…»"'), '', true)}<div class="form-grid">${fld('Регион', sel('regionId', regionOptions()))}${fld('Молодёжь до 35 лет', inp('young', '', 'type="number" min="1" required'), '', true)}</div>${fld('Отрасль', inp('sector', ''))}<button class="btn primary" type="submit">${icon('plus', 16)}Добавить</button></form><p class="note">Новые компании, ДЗО и регионы добавляются без изменения архитектуры: организация сразу появляется в каталоге, формах и рейтинге.</p>`)}
     ${card('Добавить региональное подразделение', `<form class="form" data-form="region-add">${fld('Название региона', inp('name', '', 'required'), '', true)}${fld('Административный центр', inp('city', '', 'required'), '', true)}<div class="form-grid">${fld('Широта', inp('lat', '', 'type="number" step="0.01" min="40" max="56" required'))}${fld('Долгота', inp('lon', '', 'type="number" step="0.01" min="46" max="88" required'))}</div><button class="btn" type="submit">${icon('plus', 16)}Добавить регион</button></form>`)}</div>`;
   } else if (tab === 'users') {
     const f = (UI.au = { q: '', role: '', ...(UI.au || {}) });
@@ -475,7 +475,7 @@ route('admin', () => {
     if (typeof LIVE !== 'undefined' && LIVE) body = liveDataTab(); else body = `<div class="grid g2">${card('Хранение данных', `<p>Демо-версия хранит данные в браузере: ${STORAGE_OK ? chip('сохранение работает', 'good') : chip('сохранение недоступно — данные живут до перезагрузки', 'warn')}</p><dl class="dl2"><div><dt>Пользователей</dt><dd>${DB.users.length}</dd></div><div><dt>Проектов</dt><dd>${DB.projects.length}</dd></div><div><dt>Мероприятий</dt><dd>${DB.events.length}</dd></div><div><dt>Записей аудита</dt><dd>${DB.audit.length}</dd></div></dl><p class="note">В рабочей версии данные хранятся в PostgreSQL (Supabase) с политиками RLS, файлы — в Supabase Storage. Схема базы данных приложена к проекту.</p>`)}
       ${card('Экспорт и сброс', `<div class="btn-row"><button class="btn" data-act="export-json">${icon('download', 16)}Экспорт всех данных (JSON)</button><button class="btn danger" data-act="reset-demo">${icon('refresh', 16)}Сбросить демо-данные</button></div><p class="note">Сброс удаляет все изменения в этом браузере и заново генерирует тестовые данные.</p>`)}</div>`;
   }
-  return `<div class="page">${pageHead('Администрирование', 'Управление компаниями, пользователями, экспертами, критериями рейтинга и журналами', '', 'Главный администратор Фонда')}
+  return `<div class="page">${pageHead('Администрирование', 'Управление организациями, пользователями, экспертами, критериями рейтинга и журналами', '', 'Главный администратор платформы')}
     ${tabs('tabs.adm', [['orgs', 'Компании и регионы'], ['users', 'Пользователи и роли'], ['experts', 'Эксперты', unassigned || null], ['criteria', 'Критерии рейтинга'], ['appeals', 'Апелляции', openAppeals || null], ['feedback', 'Обращения', fbList().filter((x) => x.status === 'new').length || null], ['audit', 'Журнал аудита'], ['history', 'История рейтинга'], ['data', 'Данные']], tab)}${body}</div>`;
 }, guardRoles('admin'));
 ACTIONS['org-young'] = (el) => {
@@ -489,7 +489,7 @@ FORMS['org-add'] = (form) => {
   const d = formData(form);
   if (!d.name || !d.full || !(+d.young > 0)) { toast('Заполните название, полное наименование и численность', 'bad'); return; }
   const id = (d.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'org') + Math.random().toString(36).slice(2, 5);
-  const o = { id, type: d.type, parentId: d.type === 'subsidiary' ? d.parentId : 'sk', name: d.name, full: d.full, regionId: d.regionId, sector: d.sector || '—', young: +d.young, about: `Молодёжный совет ${d.full}.`, council: { chairId: null, founded: new Date().getFullYear(), regionalReps: [] } };
+  const o = { id, type: d.type, parentId: d.type === 'subsidiary' ? d.parentId : headId(), name: d.name, full: d.full, regionId: d.regionId, sector: d.sector || '—', young: +d.young, about: `Молодёжный совет ${d.full}.`, council: { chairId: null, founded: new Date().getFullYear(), regionalReps: [] } };
   withRatingDiff('Добавлена организация ' + d.name, () => { DB.orgs.push(o); reindex(); audit('Добавление организации', 'org', id, d.full); });
   toast('Организация добавлена', 'good'); rerender();
 };
@@ -558,10 +558,10 @@ ACTIONS['reset-demo'] = () => confirmModal('Сбросить демо-данны
 /* ============================ МЕТОДИКА ============================ */
 route('methodology', () => {
   const rows = companyScores();
-  const big = rows.find((r) => r.orgId === 'ktz'), small = rows.find((r) => r.orgId === 'ivt') || rows[rows.length - 1];
+  const bySize = rows.filter((r) => r.activities > 0).sort((a, b) => b.size - a.size); const big = bySize[0], small = bySize[bySize.length - 1];
   const steps = [['draft', 'Автор заполняет форму и прикладывает доказательства'], ['submitted', 'Система назначает эксперта без конфликта интересов'], ['in_review', 'Эксперт проверяет документы и показатели'], ['needs_info', 'При необходимости запрашивает уточнения'], ['confirmed', 'Подтверждение — баллы начисляются, рейтинг пересчитывается'], ['rejected', 'Отклонение — можно подать апелляцию']];
   return `<div class="page narrow-w">
-    ${pageHead('Методика рейтинга', 'Открытая методика оценки Молодёжных советов и молодых лидеров. Версия для демо — веса могут быть изменены решением администратора Фонда, все изменения фиксируются.', '', 'Прозрачность')}
+    ${pageHead('Методика рейтинга', 'Открытая методика оценки Молодёжных советов и молодых лидеров. Версия для демо — веса могут быть изменены решением администратора платформы, все изменения фиксируются.', '', 'Прозрачность')}
     <div class="grid g2">
       ${card('Рейтинг Молодёжных советов', `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Показатель</th><th class="num">Вес</th></tr></thead><tbody>${COMPANY_COMPONENTS.map((c) => `<tr><td><b>${esc(c.name)}</b><small>${esc(c.hint)}</small></td><td class="num">${DB.settings.wCompany[c.k]}%</td></tr>`).join('')}</tbody></table></div>`)}
       ${card('ТОП-100 молодых лидеров', `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Показатель</th><th class="num">Вес</th></tr></thead><tbody>${PERSON_COMPONENTS.map((c) => `<tr><td><b>${esc(c.name)}</b><small>${esc(c.hint)}</small></td><td class="num">${DB.settings.wPerson[c.k]}%</td></tr>`).join('')}</tbody></table></div>`)}
@@ -587,7 +587,7 @@ route('methodology', () => {
       ['Отзывы не влияют на баллы', 'Благодарности и обращения в разделе «Обратная связь» не участвуют в расчёте рейтинга']
     ].map(([a, b]) => `<tr><td><b>${a}</b></td><td>${b}</td></tr>`).join('')}</tbody></table></div>`)}
     ${card('Жизненный цикл проверки', `<ol class="flow">${steps.map(([s, d]) => `<li>${statusChip(s)}<span>${d}</span></li>`).join('')}</ol>`)}
-    ${card('Процедура оспаривания', `<ol class="method"><li>Автор, руководитель или участник открывает активность и нажимает «Оспорить оценку», указывает основание.</li><li>Администратор Фонда рассматривает апелляцию и либо отклоняет её с обоснованием, либо назначает повторную экспертизу.</li><li>Повторную экспертизу проводит другой эксперт без конфликта интересов; новое решение пересчитывает рейтинг.</li><li>Все шаги видны заявителю в истории статусов и сохраняются в журнале аудита.</li></ol>`)}
+    ${card('Процедура оспаривания', `<ol class="method"><li>Автор, руководитель или участник открывает активность и нажимает «Оспорить оценку», указывает основание.</li><li>Администратор платформы рассматривает апелляцию и либо отклоняет её с обоснованием, либо назначает повторную экспертизу.</li><li>Повторную экспертизу проводит другой эксперт без конфликта интересов; новое решение пересчитывает рейтинг.</li><li>Все шаги видны заявителю в истории статусов и сохраняются в журнале аудита.</li></ol>`)}
   </div>`;
 });
 

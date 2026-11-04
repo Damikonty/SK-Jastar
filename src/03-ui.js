@@ -71,7 +71,8 @@ function orgLogo(o, size = 40) {
   if (!o) return '';
   const root = rootOf(o.id) || o.id;
   const h = ORG_HUE[root] ?? hueOf(root);
-  return `<span class="logo ${o.type === 'subsidiary' ? 'sub' : ''}" style="--s:${size}px;--h:${h}" title="${esc(o.full)}">${esc(orgAbbr(o))}</span>`;
+  const ab = orgAbbr(o); const k = ab.length >= 5 ? 0.2 : ab.length === 4 ? 0.23 : 0.27;
+  return `<span class="logo ${o.type === 'subsidiary' ? 'sub' : ''}" style="--s:${size}px;--h:${h};font-size:${(size * k).toFixed(1)}px" title="${esc(o.full)}">${esc(ab)}</span>`;
 }
 const chip = (txt, tone = '', ic = '') => `<span class="chip ${tone ? 'tone-' + tone : ''}">${ic ? icon(ic, 13) : ''}${esc(txt)}</span>`;
 const statusChip = (s) => { const x = STATUS[s] || { label: s, tone: '' }; return `<span class="chip st tone-${x.tone}"><i class="dot"></i>${esc(x.label)}</span>`; };
@@ -167,13 +168,25 @@ const DRAW = {
     const sorted = DB.regions.slice().sort((a, b) => ((values[b.id] || {}).v || 0) - ((values[a.id] || {}).v || 0));
     const top = new Set(sorted.slice(0, W > 560 ? 7 : 4).map((r) => r.id));
     let g = `<path d="${d}" class="kz"/>`;
+    const labels = [];
     sorted.slice().reverse().forEach((r) => {
       const v = (values[r.id] || {}).v || 0;
       const rad = (3 + 15 * Math.sqrt(v / max)) * sc;
       const cx = px(r.lon), cy = py(r.lat);
       const info = values[r.id] || {};
       g += `<g class="reg" data-act="map-region" data-id="${r.id}" data-tip="${esc(`${r.name}\nПодтверждённых проектов: ${info.p || 0}\nМероприятий: ${info.e || 0}\nОхват: ${fmt(info.reach || 0)} чел.`)}"><circle cx="${cx}" cy="${cy}" r="${Math.max(rad, 12)}" class="hit"/><circle cx="${cx}" cy="${cy}" r="${rad}" class="bub ${v ? '' : 'zero'}"/></g>`;
-      if (top.has(r.id) && v) { const left = cx > W - 130; g += `<text x="${left ? cx - rad - 4 : cx + rad + 4}" y="${cy + 4}" class="maplbl" text-anchor="${left ? 'end' : 'start'}">${esc(r.city)}</text>`; }
+      if (top.has(r.id) && v) labels.push({ r, cx, cy, rad, v });
+    });
+    const placed = labels.map(({ cx, cy, rad }) => [cx - rad, cy - rad, cx + rad, cy + rad]);
+    labels.sort((a, b) => b.v - a.v).forEach(({ r, cx, cy, rad }) => {
+      const w = r.city.length * 6.6 + 4, h = 14;
+      const opts = [[cx + rad + 4, 'start'], [cx - rad - 4, 'end']];
+      for (const [x, anchor] of opts) {
+        const x0 = anchor === 'start' ? x : x - w; const box = [x0, cy - 10, x0 + w, cy - 10 + h];
+        if (box[0] < 2 || box[2] > W - 2) continue;
+        if (placed.some((p) => !(box[2] < p[0] || box[0] > p[2] || box[3] < p[1] || box[1] > p[3]))) continue;
+        placed.push(box); g += `<text x="${x}" y="${cy + 4}" class="maplbl" text-anchor="${anchor}">${esc(r.city)}</text>`; break;
+      }
     });
     return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Карта активности по регионам Казахстана">${g}</svg>`;
   }
@@ -325,7 +338,7 @@ function brandMark(s = 34) {
 function renderSide() {
   const active = NAV_OF[CURRENT.name] || CURRENT.name;
   const pending = me() && myRole() === 'expert' ? [...DB.projects, ...DB.events, ...DB.achievements].filter((x) => x.review && x.review.expertId === me().id && ['submitted', 'in_review', 'needs_info'].includes(x.status) && x.status !== 'needs_info').length : 0;
-  $('#side').innerHTML = `<a class="brand" href="#home">${brandMark()}<span><b>JASTAR HUB</b><small>Молодёжные советы группы Самрук-Қазына</small></span></a>
+  $('#side').innerHTML = `<a class="brand" href="#home">${brandMark()}<span><b>JASTAR HUB</b><small>Молодёжный совет группы «Самрук-Энерго»</small></span></a>
     <nav aria-label="Основная навигация">${NAV.map((grp) => {
       const items = grp.items.filter(([, , show]) => !show || show());
       if (!items.length) return '';
@@ -360,7 +373,7 @@ function globalSearch(q) {
   const projects = DB.projects.filter((p) => canSeeActivity(p) && norm(p.title).includes(s)).slice(0, 5);
   const orgs = DB.orgs.filter((o) => norm(o.name + ' ' + o.full).includes(s)).slice(0, 4);
   const sec = (title, rows) => (rows.length ? `<div class="gs"><span>${title}</span>${rows.join('')}</div>` : '');
-  const html = sec('Компании и советы', orgs.map((o) => `<a href="#company-${o.id}">${orgLogo(o, 24)}<span>${esc(o.name)}<small>${esc(o.full)}</small></span></a>`))
+  const html = sec('Организации и советы', orgs.map((o) => `<a href="#company-${o.id}">${orgLogo(o, 24)}<span>${esc(o.name)}<small>${esc(o.full)}</small></span></a>`))
     + sec('Участники', people.map((u) => `<a href="#person-${u.id}">${avatar(u, 24)}<span>${esc(u.name)}<small>${esc(u.position)} · ${esc(orgLabel(u.companyId))}</small></span></a>`))
     + sec('Проекты', projects.map((p) => `<a href="#project-${p.id}">${icon(CAT(p.category).icon, 18)}<span>${esc(p.title)}<small>${esc(orgLabel(p.orgId))} · ${fmtDate(p.end)}</small></span></a>`));
   box.innerHTML = html || '<p class="muted pad">Ничего не найдено</p>';

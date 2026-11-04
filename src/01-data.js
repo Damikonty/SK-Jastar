@@ -45,36 +45,34 @@ const KZ_OUTLINE = [
   [50.3,44.6],[50.0,44.9],[51.3,45.3],[52.6,45.4],[53.0,45.9],[53.1,46.5],[52.0,46.9],[51.2,47.1],[50.0,46.7],[49.2,46.4]
 ];
 
-/* Организационная структура группы. Численность молодёжи (young) — ТЕСТОВАЯ. */
+/* Организационная структура группы компаний АО «Самрук-Энерго».
+   type: fund — корпоративный центр, portfolio — дочерняя/зависимая организация (ДЗО), subsidiary — филиал ДЗО.
+   Численность молодёжи до 35 лет (young) — ОРИЕНТИРОВОЧНАЯ, администратор уточняет её в админ-панели. */
 const ORGS_SEED = [
-  { id: 'sk', type: 'fund', parentId: null, name: 'Самрук-Қазына', full: 'АО «Самрук-Қазына»', regionId: 'ast', sector: 'Фонд национального благосостояния', young: 420 },
-  { id: 'kmg', type: 'portfolio', parentId: 'sk', name: 'КазМунайГаз', full: 'АО НК «КазМунайГаз»', regionId: 'ast', sector: 'Нефть и газ', young: 3200 },
-  { id: 'ozm', type: 'subsidiary', parentId: 'kmg', name: 'Озенмунайгаз', full: 'АО «Озенмунайгаз»', regionId: 'man', sector: 'Добыча нефти', young: 1400 },
-  { id: 'emg', type: 'subsidiary', parentId: 'kmg', name: 'Эмбамунайгаз', full: 'АО «Эмбамунайгаз»', regionId: 'aty', sector: 'Добыча нефти', young: 900 },
-  { id: 'anpz', type: 'subsidiary', parentId: 'kmg', name: 'Атырауский НПЗ', full: 'ТОО «Атырауский нефтеперерабатывающий завод»', regionId: 'aty', sector: 'Нефтепереработка', young: 620 },
-  { id: 'kto', type: 'subsidiary', parentId: 'kmg', name: 'КазТрансОйл', full: 'АО «КазТрансОйл»', regionId: 'ast', sector: 'Транспортировка нефти', young: 1100 },
-  { id: 'kap', type: 'portfolio', parentId: 'sk', name: 'Казатомпром', full: 'АО «НАК «Казатомпром»', regionId: 'ast', sector: 'Атомная промышленность', young: 1300 },
-  { id: 'umz', type: 'subsidiary', parentId: 'kap', name: 'Ульбинский металлургический завод', full: 'АО «Ульбинский металлургический завод»', regionId: 'vko', sector: 'Металлургия', young: 750 },
-  { id: 'ivt', type: 'subsidiary', parentId: 'kap', name: 'Институт высоких технологий', full: 'ТОО «Институт высоких технологий»', regionId: 'alm', sector: 'Наука и R&D', young: 85 },
-  { id: 'ktz', type: 'portfolio', parentId: 'sk', name: 'Қазақстан темір жолы', full: 'АО «НК «Қазақстан темір жолы»', regionId: 'ast', sector: 'Железнодорожный транспорт', young: 9500 },
-  { id: 'ktzpp', type: 'subsidiary', parentId: 'ktz', name: 'Пассажирские перевозки', full: 'АО «Пассажирские перевозки»', regionId: 'ast', sector: 'Пассажирские перевозки', young: 1600 },
-  { id: 'ktzgp', type: 'subsidiary', parentId: 'ktz', name: 'КТЖ – Грузовые перевозки', full: 'АО «КТЖ – Грузовые перевозки»', regionId: 'ast', sector: 'Грузовые перевозки', young: 4100 },
-  { id: 'se', type: 'portfolio', parentId: 'sk', name: 'Самрук-Энерго', full: 'АО «Самрук-Энерго»', regionId: 'ast', sector: 'Электроэнергетика', young: 640 },
-  { id: 'ales', type: 'subsidiary', parentId: 'se', name: 'АлЭС', full: 'АО «Алматинские электрические станции»', regionId: 'alm', sector: 'Тепло- и электроэнергетика', young: 720 },
-  { id: 'egres', type: 'subsidiary', parentId: 'se', name: 'Экибастузская ГРЭС-1', full: 'ТОО «Экибастузская ГРЭС-1»', regionId: 'pav', sector: 'Электроэнергетика', young: 540 },
-  { id: 'mges', type: 'subsidiary', parentId: 'se', name: 'Мойнакская ГЭС', full: 'АО «Мойнакская ГЭС»', regionId: 'ala', sector: 'Гидроэнергетика', young: 70 },
-  { id: 'kegoc', type: 'portfolio', parentId: 'sk', name: 'KEGOC', full: 'АО «KEGOC»', regionId: 'ast', sector: 'Электрические сети', young: 1150 },
-  { id: 'qg', type: 'portfolio', parentId: 'sk', name: 'QazaqGaz', full: 'АО «НК «QazaqGaz»', regionId: 'ast', sector: 'Газовая отрасль', young: 2300 },
-  { id: 'ica', type: 'subsidiary', parentId: 'qg', name: 'Интергаз Центральная Азия', full: 'АО «Интергаз Центральная Азия»', regionId: 'ast', sector: 'Транспортировка газа', young: 950 },
-  { id: 'kt', type: 'portfolio', parentId: 'sk', name: 'Казахтелеком', full: 'АО «Казахтелеком»', regionId: 'ast', sector: 'Телекоммуникации', young: 2700 },
-  { id: 'kcell', type: 'subsidiary', parentId: 'kt', name: 'Kcell', full: 'АО «Kcell»', regionId: 'alm', sector: 'Мобильная связь', young: 640 },
-  { id: 'kp', type: 'portfolio', parentId: 'sk', name: 'Казпочта', full: 'АО «Казпочта»', regionId: 'ast', sector: 'Почта и логистика', young: 2400 },
-  { id: 'tks', type: 'portfolio', parentId: 'sk', name: 'Тау-Кен Самрук', full: 'АО «НГК «Тау-Кен Самрук»', regionId: 'ast', sector: 'Горнорудная отрасль', young: 310 },
-  { id: 'qa', type: 'portfolio', parentId: 'sk', name: 'Qazaq Air', full: 'АО «Qazaq Air»', regionId: 'ast', sector: 'Авиаперевозки', young: 140 }
+  { id: 'se', type: 'fund', parentId: null, name: 'Самрук-Энерго', full: 'АО «Самрук-Энерго»', regionId: 'ast', sector: 'Корпоративный центр группы', young: 160 },
+  { id: 'qgp', type: 'portfolio', parentId: 'se', name: 'Qazaq Green Power', full: 'Qazaq Green Power PLC', regionId: 'ast', sector: 'Возобновляемая энергетика', young: 25 },
+  { id: 'pves', type: 'portfolio', parentId: 'se', name: 'ПВЭС', full: 'ТОО «ПВЭС»', regionId: 'akm', sector: 'Ветровая генерация', young: 15 },
+  { id: 'ewp', type: 'portfolio', parentId: 'se', name: 'Ereymentau Wind Power', full: 'ТОО «Ereymentau Wind Power»', regionId: 'akm', sector: 'Ветровая генерация', young: 12 },
+  { id: 'sge', type: 'portfolio', parentId: 'se', name: 'Samruk-Green Energy', full: 'ТОО «Samruk-Green Energy»', regionId: 'ala', sector: 'Возобновляемая энергетика', young: 40 },
+  { id: 'shges', type: 'portfolio', parentId: 'se', name: 'Шардаринская ГЭС', full: 'АО «Шардаринская ГЭС»', regionId: 'tur', sector: 'Гидрогенерация', young: 60 },
+  { id: 'mges', type: 'portfolio', parentId: 'se', name: 'Мойнакская ГЭС', full: 'АО «Мойнакская ГЭС»', regionId: 'ala', sector: 'Гидрогенерация', young: 70 },
+  { id: 'ukges', type: 'portfolio', parentId: 'se', name: 'Усть-Каменогорская ГЭС', full: 'ТОО «Усть-Каменогорская ГЭС»', regionId: 'vko', sector: 'Гидрогенерация', young: 50 },
+  { id: 'bges', type: 'portfolio', parentId: 'se', name: 'Бухтарминская ГЭС', full: 'АО «Бухтарминская ГЭС»', regionId: 'vko', sector: 'Гидрогенерация', young: 60 },
+  { id: 'shulges', type: 'portfolio', parentId: 'se', name: 'Шульбинская ГЭС', full: 'ТОО «Шульбинская ГЭС»', regionId: 'aba', sector: 'Гидрогенерация', young: 55 },
+  { id: 'azhk', type: 'portfolio', parentId: 'se', name: 'Алатау Жарык Компаниясы', full: 'АО «Алатау Жарык Компаниясы»', regionId: 'alm', sector: 'Распределение электроэнергии', young: 900 },
+  { id: 'azhkes', type: 'subsidiary', parentId: 'azhk', name: 'Энергосбыт', full: 'Филиал АО «Алатау Жарык Компаниясы» — «Энергосбыт»', regionId: 'alm', sector: 'Энергосбыт', young: 250 },
+  { id: 'ales', type: 'portfolio', parentId: 'se', name: 'АлЭС', full: 'АО «АлЭС»', regionId: 'alm', sector: 'Тепло- и электрогенерация', young: 700 },
+  { id: 'egres', type: 'portfolio', parentId: 'se', name: 'Экибастузская ГРЭС-1', full: 'ТОО «Экибастузская ГРЭС-1»', regionId: 'pav', sector: 'Тепловая генерация', young: 550 },
+  { id: 'egres2', type: 'portfolio', parentId: 'se', name: 'Экибастузская ГРЭС-2', full: 'АО «Станция Экибастузская ГРЭС-2»', regionId: 'pav', sector: 'Тепловая генерация', young: 450 },
+  { id: 'esc', type: 'portfolio', parentId: 'se', name: 'Energy Solution Center', full: 'ТОО «Energy Solution Center»', regionId: 'ast', sector: 'Сервисная компания группы', young: 60 },
+  { id: 'escoco', type: 'subsidiary', parentId: 'esc', name: 'ОЦО Energy Solution Center', full: 'Филиал ТОО «Energy Solution Center» — общий центр обслуживания', regionId: 'ast', sector: 'Общий центр обслуживания', young: 80 },
+  { id: 'semey', type: 'portfolio', parentId: 'se', name: 'Семей Энерго', full: 'ТОО «Семей Энерго»', regionId: 'aba', sector: 'Энергоснабжение', young: 300 },
+  { id: 'oskemen', type: 'portfolio', parentId: 'se', name: 'Оскемен Энерго', full: 'ТОО «Оскемен Энерго»', regionId: 'vko', sector: 'Энергоснабжение', young: 250 },
+  { id: 'ktec', type: 'portfolio', parentId: 'se', name: 'Кокшетауская ТЭЦ', full: 'ТОО «Кокшетауская ТЭЦ»', regionId: 'akm', sector: 'Теплоэнергетика', young: 30 }
 ];
 
-/* Сети с филиалами по всей стране — их сотрудники распределены по регионам */
-const NETWORK_ORGS = ['ktz', 'ktzgp', 'ktzpp', 'kp', 'kt', 'kegoc', 'qg', 'ica'];
+/* Организации, сотрудники которых работают в разных регионах (сейчас таких нет: все работают по месту организации) */
+const NETWORK_ORGS = [];
 
 const CATS = [
   { id: 'prof', name: 'Профессиональное развитие', short: 'Проф. развитие', icon: 'growth', color: '#2f62d0' },
@@ -199,8 +197,8 @@ const PROJECT_TPL = {
   inter: {
     titles: ['Межкорпоративный кейс-чемпионат', 'Форум молодёжи группы', 'Обмен практиками Молодёжных советов', 'Совместный хакатон ДЗО', 'Кросс-компанийская стажировка'],
     kpis: [['Компаний-участников', 'шт.', 3, 9], ['Участников', 'чел.', 40, 250], ['Совместных инициатив', 'шт.', 2, 10]],
-    problem: 'Молодёжные советы группы работают разрозненно и не обмениваются практиками.',
-    goal: 'Наладить устойчивое взаимодействие между советами портфельных компаний.',
+    problem: 'Советы организаций группы работают разрозненно и не обмениваются практиками.',
+    goal: 'Наладить устойчивое взаимодействие между советами организаций группы.',
     result: 'Проведено {n} совместных сессий, сформированы смешанные команды.',
     effect: 'Запущены совместные инициативы нескольких компаний группы.'
   },
@@ -256,7 +254,7 @@ function seedDB() {
     demo: true
   }));
   /* Склонность к активности: небольшие советы специально сделаны очень активными, чтобы показать нормирование */
-  const activity = { sk: 1.0, kmg: 1.15, ozm: 0.8, emg: 0.7, anpz: 0.75, kto: 0.95, kap: 1.1, umz: 1.0, ivt: 1.3, ktz: 1.05, ktzpp: 0.75, ktzgp: 0.7, se: 1.25, ales: 0.9, egres: 0.85, mges: 1.25, kegoc: 1.2, qg: 0.9, ica: 0.75, kt: 1.0, kcell: 1.05, kp: 0.7, tks: 1.1, qa: 1.2 };
+  const activity = { se: 1.2, qgp: 1.4, pves: 1.3, ewp: 1.2, sge: 1.25, shges: 1.0, mges: 1.3, ukges: 1.05, bges: 0.95, shulges: 1.1, azhk: 0.9, azhkes: 0.75, ales: 1.05, egres: 1.1, egres2: 0.9, esc: 1.15, escoco: 0.85, semey: 0.8, oskemen: 0.85, ktec: 1.0 };
   const quality = {}; orgs.forEach((o) => { quality[o.id] = 6.2 + R() * 2.6; });
 
   /* --- пользователи --- */
@@ -314,10 +312,10 @@ function seedDB() {
     }
   });
   /* Карагандинский региональный председатель КТЖ — для демо-входа */
-  const ktz = orgs.find((o) => o.id === 'ktz');
-  const regDemo = users.find((u) => u.companyId === 'ktz' && u.role === 'regional');
-  if (regDemo) { regDemo.regionId = 'kar'; regDemo.city = 'Караганда'; }
-  ktz.council.regionalReps = users.filter((u) => u.companyId === 'ktz' && u.role === 'regional').map((u) => u.id);
+  const regOrg = orgs.find((o) => o.id === 'egres');
+  const regDemo = users.find((u) => u.companyId === 'egres' && u.role === 'regional');
+  if (regDemo) { regDemo.regionId = 'pav'; regDemo.city = 'Экибастуз'; }
+  regOrg.council.regionalReps = users.filter((u) => u.companyId === 'egres' && u.role === 'regional').map((u) => u.id);
   /* несколько участников ожидают подтверждения членства */
   users.filter((u) => u.role === 'member').slice(5, 200).forEach((u, i) => { if (i % 23 === 0) u.verified = false; });
 
@@ -325,10 +323,10 @@ function seedDB() {
   const experts = [
     { org: null, title: 'Внешний эксперт, проектный менеджмент', conflicts: [] },
     { org: null, title: 'Внешний эксперт, социальные проекты и НКО', conflicts: [] },
-    { org: 'kmg', title: 'Эксперт группы, КазМунайГаз', conflicts: ['kmg'] },
-    { org: 'kap', title: 'Эксперт группы, Казатомпром', conflicts: ['kap'] },
-    { org: null, title: 'Внешний эксперт, HR и развитие персонала', conflicts: ['qa'] },
-    { org: 'kegoc', title: 'Эксперт группы, KEGOC', conflicts: ['kegoc'] }
+    { org: 'ales', title: 'Эксперт группы, АлЭС', conflicts: ['ales'] },
+    { org: 'egres2', title: 'Эксперт группы, Экибастузская ГРЭС-2', conflicts: ['egres2'] },
+    { org: null, title: 'Внешний эксперт, HR и развитие персонала', conflicts: ['sge'] },
+    { org: 'esc', title: 'Эксперт группы, Energy Solution Center', conflicts: ['esc'] }
   ].map((x) => {
     const host = x.org ? orgs.find((o) => o.id === x.org) : orgs[0];
     return makeUser(host, { role: 'expert', councilRole: 'Участник', position: x.title, companyId: x.org, conflicts: x.conflicts, regionId: 'ast', city: 'Астана', dept: x.org ? 'Экспертный пул группы' : 'Независимый эксперт', bio: 'Независимый эксперт платформы JASTAR HUB. Профиль тестовый.' });
@@ -492,22 +490,22 @@ function seedDB() {
   const orgName = (id) => orgs.find((o) => o.id === id).name;
   const chairOf = (id) => orgs.find((o) => o.id === id).council.chairId;
   const newsSeed = [
-    ['announce', 'sk', 'Стартовал приём заявок на межкорпоративный кейс-чемпионат', 'Команды из разных компаний группы решат реальные кейсы портфельных компаний.', -3],
-    ['interview', 'se', 'Председатель Молодёжного совета о том, как измерять эффект проектов', 'Почему охват без результата ничего не говорит и как совет перешёл на KPI.', -6],
-    ['photo', 'ktz', 'Фотоотчёт: молодёжь КТЖ высадила аллею в Караганде', 'Акция прошла в рамках экологического направления совета.', -9],
-    ['success', 'ivt', 'Небольшая команда — большой результат: опыт ИВТ', 'Как совет из 85 молодых сотрудников вовлёк больше половины коллег.', -12],
-    ['practice', 'kegoc', 'Лучшая практика: наставничество «Buddy» в KEGOC', 'Пошаговый разбор программы адаптации, которую можно тиражировать.', -15],
-    ['news', 'kmg', 'Молодёжь КазМунайГаза провела хакатон по промышленной безопасности', 'Три решения отобраны для пилота на производственных объектах.', -18],
-    ['story', 'umz', 'История сотрудника: от практиканта до руководителя проекта', 'Путь молодого инженера и роль Молодёжного совета в его развитии.', -22],
-    ['video', 'kt', 'Видео: как устроен подкаст о профессиях Казахтелекома', 'Выпуск о том, как молодые сотрудники рассказывают о своей работе.', -26],
-    ['news', 'qa', 'Qazaq Air: волонтёры передали подарки детскому центру', 'Акция проведена совместно с партнёрами из группы.', -31],
-    ['announce', 'kap', 'Открыта регистрация на Школу молодого специалиста', 'Программа рассчитана на сотрудников со стажем до трёх лет.', -35],
-    ['practice', 'mges', 'Как совет из 70 человек стал лидером по вовлечённости', 'Ставка на регулярность и небольшие, но измеримые проекты.', -40],
-    ['news', 'kp', 'Казпочта запустила лигу мини-футбола в шести регионах', 'В первом сезоне участвуют команды филиалов.', -46],
-    ['interview', 'kcell', 'Интервью: цифровые инициативы молодёжи Kcell', 'Чат-бот для адаптации и банк идей — что получилось за год.', -55],
+    ['announce', 'se', 'Стартовал приём заявок на кейс-чемпионат молодёжи группы', 'Команды из разных организаций группы решат реальные задачи компаний «Самрук-Энерго».', -3],
+    ['interview', 'ales', 'Председатель Молодёжного совета АлЭС о том, как измерять эффект проектов', 'Почему охват без результата ничего не говорит и как совет перешёл на KPI.', -6],
+    ['photo', 'egres', 'Фотоотчёт: молодёжь Экибастузской ГРЭС-1 высадила аллею в Экибастузе', 'Акция прошла в рамках экологического направления совета.', -9],
+    ['success', 'mges', 'Небольшая команда — большой результат: опыт Мойнакской ГЭС', 'Как совет небольшого коллектива вовлёк больше половины молодых коллег.', -12],
+    ['practice', 'azhk', 'Лучшая практика: наставничество «Buddy» в Алатау Жарык Компаниясы', 'Пошаговый разбор программы адаптации, которую можно тиражировать.', -15],
+    ['news', 'egres2', 'Молодёжь ГРЭС-2 провела хакатон по промышленной безопасности', 'Три решения отобраны для пилота на производственных объектах.', -18],
+    ['story', 'bges', 'История сотрудника: от практиканта до руководителя проекта', 'Путь молодого инженера и роль Молодёжного совета в его развитии.', -22],
+    ['video', 'esc', 'Видео: как устроен подкаст о профессиях в энергетике', 'Выпуск о том, как молодые сотрудники рассказывают о своей работе.', -26],
+    ['news', 'sge', 'Samruk-Green Energy: волонтёры передали подарки детскому центру', 'Акция проведена совместно с советами других организаций группы.', -31],
+    ['announce', 'se', 'Открыта регистрация на Школу молодого специалиста', 'Программа рассчитана на сотрудников группы со стажем до трёх лет.', -35],
+    ['practice', 'pves', 'Как совет ветровой станции стал лидером по вовлечённости', 'Ставка на регулярность и небольшие, но измеримые проекты.', -40],
+    ['news', 'semey', 'Семей Энерго запустило лигу мини-футбола', 'В первом сезоне участвуют команды цехов и подразделений.', -46],
+    ['interview', 'qgp', 'Интервью: цифровые инициативы молодёжи Qazaq Green Power', 'Чат-бот для адаптации и банк идей — что получилось за год.', -55],
     ['photo', 'ales', 'Фотоотчёт с субботника на территории ТЭЦ', 'Молодёжь АлЭС провела экологическую акцию.', -63],
-    ['success', 'tks', 'Банк идей Тау-Кен Самрук: первые внедрения', 'Две инициативы молодёжи дали подтверждённый экономический эффект.', -71],
-    ['news', 'qg', 'QazaqGaz провёл открытый лекторий для молодёжи', 'Отраслевые эксперты рассказали о развитии газовой отрасли.', -84]
+    ['success', 'ukges', 'Банк идей Усть-Каменогорской ГЭС: первые внедрения', 'Две инициативы молодёжи дали подтверждённый экономический эффект.', -71],
+    ['news', 'oskemen', 'Оскемен Энерго провело открытый лекторий для молодёжи', 'Отраслевые эксперты рассказали о развитии энергетики региона.', -84]
   ];
   const news = newsSeed.map(([kind, orgId, title, lead, off], i) => ({
     id: 'n' + (i + 1), kind, orgId, title, lead, date: dayISO(off), authorId: chairOf(orgId), published: true, views: rint(80, 1900),
@@ -517,20 +515,20 @@ function seedDB() {
 
   /* --- база знаний --- */
   const kbSeed = [
-    ['template', 'Шаблон паспорта проекта Молодёжного совета', 'Структура: проблема, цель, задачи, команда, KPI, бюджет, риски.', 'sk'],
-    ['template', 'Шаблон отчёта о реализации проекта', 'Фактические результаты, KPI план/факт, охват, доказательства.', 'sk'],
-    ['howto', 'Как организовать мероприятие: чек-лист на 4 недели', 'Пошаговый план от идеи до отчёта и фотоотчёта.', 'sk'],
-    ['method', 'Методика оценки эффективности Молодёжных советов', 'Критерии, веса, нормирование по численности, процедура оспаривания.', 'sk'],
-    ['method', 'Как формулировать измеримые KPI проекта', 'Примеры хороших и плохих KPI, связь с результатами.', 'sk'],
-    ['case', 'Кейс: наставничество «Buddy» (KEGOC)', 'Программа адаптации с подтверждённым сокращением срока адаптации.', 'kegoc'],
-    ['case', 'Кейс: волонтёрский корпус (Самрук-Энерго)', 'Регулярная волонтёрская помощь вместо разовых акций.', 'se'],
-    ['success', 'Кейс: вовлечённость в небольшом коллективе (ИВТ)', 'Как добиться высокой доли вовлечённых при малой численности.', 'ivt'],
-    ['presentation', 'Презентация: стратегия молодёжной политики группы', 'Основные направления и целевые показатели (тестовый материал).', 'sk'],
-    ['presentation', 'Презентация: итоги работы советов за год', 'Шаблон годовой презентации совета.', 'sk'],
-    ['edu', 'Курс: основы проектного управления для советов', '6 коротких уроков с заданиями.', 'kap'],
-    ['edu', 'Гайд по публичным выступлениям', 'Структура выступления, работа с вопросами, слайды.', 'kt'],
-    ['howto', 'Как подготовить доказательства для экспертизы', 'Какие документы принимаются и почему фото не влияют на баллы.', 'sk'],
-    ['template', 'Шаблон положения о Молодёжном совете', 'Типовая структура положения для ДЗО.', 'sk']
+    ['template', 'Шаблон паспорта проекта Молодёжного совета', 'Структура: проблема, цель, задачи, команда, KPI, бюджет, риски.', 'se'],
+    ['template', 'Шаблон отчёта о реализации проекта', 'Фактические результаты, KPI план/факт, охват, доказательства.', 'se'],
+    ['howto', 'Как организовать мероприятие: чек-лист на 4 недели', 'Пошаговый план от идеи до отчёта и фотоотчёта.', 'se'],
+    ['method', 'Методика оценки эффективности Молодёжных советов', 'Критерии, веса, нормирование по численности, процедура оспаривания.', 'se'],
+    ['method', 'Как формулировать измеримые KPI проекта', 'Примеры хороших и плохих KPI, связь с результатами.', 'se'],
+    ['case', 'Кейс: наставничество «Buddy» (Алатау Жарык Компаниясы)', 'Программа адаптации с подтверждённым сокращением срока адаптации.', 'azhk'],
+    ['case', 'Кейс: волонтёрский корпус (АлЭС)', 'Регулярная волонтёрская помощь вместо разовых акций.', 'ales'],
+    ['success', 'Кейс: вовлечённость в небольшом коллективе (Мойнакская ГЭС)', 'Как добиться высокой доли вовлечённых при малой численности.', 'mges'],
+    ['presentation', 'Презентация: стратегия молодёжной политики группы', 'Основные направления и целевые показатели (тестовый материал).', 'se'],
+    ['presentation', 'Презентация: итоги работы советов за год', 'Шаблон годовой презентации совета.', 'se'],
+    ['edu', 'Курс: основы проектного управления для советов', '6 коротких уроков с заданиями.', 'esc'],
+    ['edu', 'Гайд по публичным выступлениям', 'Структура выступления, работа с вопросами, слайды.', 'egres'],
+    ['howto', 'Как подготовить доказательства для экспертизы', 'Какие документы принимаются и почему фото не влияют на баллы.', 'se'],
+    ['template', 'Шаблон положения о Молодёжном совете', 'Типовая структура положения для ДЗО и филиалов.', 'se']
   ];
   const knowledge = kbSeed.map(([kind, title, desc, orgId], i) => ({
     id: 'k' + (i + 1), kind, title, desc, orgId, date: dayISO(-rint(10, 300)), authorId: admin.id,
@@ -539,7 +537,7 @@ function seedDB() {
 
   /* --- обратная связь и благодарности (тестовые) --- */
   const fbPool = users.filter((u) => ['member', 'chair', 'regional'].includes(u.role));
-  const memberDemo = users.find((u) => u.companyId === 'qg' && u.role === 'member');
+  const memberDemo = users.find((u) => u.companyId === 'azhk' && u.role === 'member');
   const thanksTexts = [
     'Спасибо за помощь с подготовкой отчёта по проекту — без вас мы бы не уложились в срок.',
     'Благодарю за наставничество в первые месяцы работы: в процессах стало намного проще разобраться.',
@@ -556,7 +554,7 @@ function seedDB() {
     let to = pick(fbPool); if (to.id === from.id) to = fbPool[(fbPool.indexOf(to) + 1) % fbPool.length];
     fbAdd({ userId: from.id, kind: 'thanks', body: text, targetType: 'user', targetId: i === 1 ? memberDemo.id : to.id, isPublic: true, status: 'published', createdAt: tsISO(-rint(1, 40)) });
   });
-  fbAdd({ userId: pick(fbPool).id, kind: 'thanks', body: 'Спасибо Молодёжному совету KEGOC за открытый обмен практиками по наставничеству.', targetType: 'org', targetId: 'kegoc', isPublic: true, status: 'published', createdAt: tsISO(-12) });
+  fbAdd({ userId: pick(fbPool).id, kind: 'thanks', body: 'Спасибо Молодёжному совету АлЭС за открытый обмен практиками по наставничеству.', targetType: 'org', targetId: 'ales', isPublic: true, status: 'published', createdAt: tsISO(-12) });
   fbAdd({ userId: pick(fbPool).id, kind: 'thanks', body: 'Спасибо команде платформы: подавать проекты на проверку стало намного проще.', targetType: 'platform', isPublic: true, status: 'published', createdAt: tsISO(-5) });
   fbAdd({ userId: pick(fbPool).id, kind: 'suggestion', subject: 'Шаблон отчёта для мероприятий', body: 'Предлагаю добавить в базу знаний готовый шаблон отчёта по мероприятию с листом регистрации — сейчас каждый совет делает свой.', section: 'Мероприятия', status: 'done', reply: 'Спасибо! Шаблон добавлен в базу знаний.', repliedBy: admin.id, repliedAt: tsISO(-3), createdAt: tsISO(-9) });
   fbAdd({ userId: pick(fbPool).id, kind: 'recommendation', subject: 'Напоминания о сроках проверки', body: 'Рекомендую присылать председателю напоминание, если заявка совета ждёт проверки дольше недели.', section: 'Экспертиза', status: 'in_work', createdAt: tsISO(-4) });
@@ -577,9 +575,9 @@ function seedDB() {
     session: { userId: null },
     demoAccounts: {
       admin: admin.id,
-      chair: orgs.find((o) => o.id === 'kegoc').council.chairId,
+      chair: orgs.find((o) => o.id === 'ales').council.chairId,
       regional: regDemo ? regDemo.id : null,
-      member: users.find((u) => u.companyId === 'qg' && u.role === 'member').id,
+      member: memberDemo.id,
       expert: experts[0].id,
       expertConflict: experts[2].id
     }
@@ -601,7 +599,7 @@ function rootOfSeed(id, orgs) {
   return o.type === 'subsidiary' ? o.parentId : o.id;
 }
 
-/* Конфликт интересов: эксперт не проверяет свою компанию и её ДЗО, а также задекларированные организации */
+/* Конфликт интересов: эксперт не проверяет свою организацию и её филиалы, а также задекларированные организации */
 function conflictOf(expert, orgId, orgs) {
   if (!expert) return true;
   const root = rootOfSeed(orgId, orgs);
@@ -609,13 +607,13 @@ function conflictOf(expert, orgId, orgs) {
   if (expert.companyId) list.push(expert.companyId);
   return list.some((c) => {
     const cr = rootOfSeed(c, orgs);
-    return c === orgId || c === root || (cr && cr !== 'sk' && cr === root);
+    return c === orgId || c === root || (cr && (orgs.find((o) => o.id === cr) || {}).type !== 'fund' && cr === root);
   });
 }
 
 function kbContent(kind, title, desc) {
   if (kind === 'template' && title.includes('паспорта')) {
-    return `# ${title}\n\n1. Название проекта\n2. Компания-инициатор и ДЗО\n3. Регион\n4. Руководитель и команда (с долей вклада каждого, сумма 100%)\n5. Проблема, которую решает проект\n6. Цель и задачи\n7. Сроки: начало и завершение\n8. Измеримые KPI: показатель / единица / план / факт\n9. Ожидаемый социальный или экономический эффект\n10. Партнёры\n11. Перечень доказательств (списки участников, акты, отчёты)\n`;
+    return `# ${title}\n\n1. Название проекта\n2. Организация-инициатор и филиал\n3. Регион\n4. Руководитель и команда (с долей вклада каждого, сумма 100%)\n5. Проблема, которую решает проект\n6. Цель и задачи\n7. Сроки: начало и завершение\n8. Измеримые KPI: показатель / единица / план / факт\n9. Ожидаемый социальный или экономический эффект\n10. Партнёры\n11. Перечень доказательств (списки участников, акты, отчёты)\n`;
   }
   if (kind === 'template' && title.includes('отчёта')) {
     return `# ${title}\n\n1. Краткое описание реализации\n2. Фактические результаты\n3. KPI: план / факт / % выполнения\n4. Количество участников и охваченных сотрудников (с подтверждающими списками)\n5. Волонтёрские часы (если применимо)\n6. Социальный или экономический эффект\n7. Приложения: отчёт, списки, фото- и видеоматериалы\n`;

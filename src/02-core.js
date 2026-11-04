@@ -66,8 +66,13 @@ const rootOf = (id) => { const o = O(id); if (!o) return null; return o.type ===
 const childrenOf = (id) => DB.orgs.filter((o) => o.parentId === id && o.type === 'subsidiary');
 const familyOf = (id) => [id, ...childrenOf(id).map((o) => o.id)];
 const orgLabel = (id) => (O(id) ? O(id).name : '—');
-const ABBR = { sk: 'СҚ', kmg: 'КМГ', ozm: 'ОМГ', emg: 'ЭМГ', anpz: 'АНПЗ', kto: 'КТО', kap: 'КАП', umz: 'УМЗ', ivt: 'ИВТ', ktz: 'ҚТЖ', ktzpp: 'ПП', ktzgp: 'ГП', se: 'СЭ', ales: 'АлЭС', egres: 'ГРЭС', mges: 'МГЭС', kegoc: 'KEG', qg: 'QG', ica: 'ИЦА', kt: 'КТ', kcell: 'Kc', kp: 'КП', tks: 'ТКС', qa: 'QA' };
-const ORG_HUE = { sk: 222, kmg: 212, kap: 168, ktz: 4, se: 186, kegoc: 238, qg: 26, kt: 270, kp: 44, tks: 32, qa: 200 };
+/* Структура группы: корпоративный центр (fund) → ДЗО (portfolio) → филиалы ДЗО (subsidiary) */
+const headId = () => ((DB.orgs || []).find((o) => o.type === 'fund') || { id: 'se' }).id;
+const orgTypeLabel = (o) => (!o ? '' : o.type === 'fund' ? 'Корпоративный центр' : o.type === 'portfolio' ? 'ДЗО' : 'Филиал ' + orgLabel(o.parentId));
+const groupName = (o) => { const n = DB.orgs.filter((x) => x.parentId === o.id && x.type === 'subsidiary').length; return o.name + (n ? (n > 1 ? ' с филиалами' : ' с филиалом') : ''); };
+const rootOptions = (allLabel) => [['', allLabel], ...DB.orgs.filter((o) => o.type !== 'subsidiary').map((o) => [o.id, groupName(o)])];
+const ABBR = { se: 'СЭ', qgp: 'QGP', pves: 'ПВЭС', ewp: 'EWP', sge: 'SGE', shges: 'ШГЭС', mges: 'МГЭС', ukges: 'УКГЭС', bges: 'БГЭС', shulges: 'ШуГЭС', azhk: 'АЖК', azhkes: 'ЭС', ales: 'АлЭС', egres: 'ГРЭС1', egres2: 'ГРЭС2', esc: 'ESC', escoco: 'ОЦО', semey: 'СмЭ', oskemen: 'ОсЭ', ktec: 'КТЭЦ' };
+const ORG_HUE = { se: 192, qgp: 150, pves: 168, ewp: 176, sge: 120, shges: 205, mges: 214, ukges: 222, bges: 230, shulges: 238, azhk: 32, ales: 4, egres: 268, egres2: 282, esc: 250, semey: 44, oskemen: 340, ktec: 20 };
 function orgAbbr(o) {
   if (o.abbr) return o.abbr;
   if (ABBR[o.id]) return ABBR[o.id];
@@ -79,7 +84,7 @@ function orgAbbr(o) {
 
 /* ---------- сессия и роли ---------- */
 const ROLES = {
-  admin: { name: 'Главный администратор Фонда', short: 'Администратор' },
+  admin: { name: 'Главный администратор платформы', short: 'Администратор' },
   chair: { name: 'Председатель Молодёжного совета', short: 'Председатель' },
   regional: { name: 'Региональный председатель', short: 'Региональный председатель' },
   member: { name: 'Участник', short: 'Участник' },
@@ -108,7 +113,7 @@ function canEditActivity(x) {
   if (!open) return false;
   if (x.createdBy === u.id || x.leaderId === u.id || (x.organizers || []).includes(u.id)) return true;
   if (u.role === 'chair' && familyOf(rootOf(u.companyId)).includes(x.orgId) && (rootOf(u.companyId) === u.companyId || u.companyId === x.orgId)) return true;
-  if (u.role === 'regional' && x.regionId === u.regionId && rootOf(x.orgId) === rootOf(u.companyId)) return true;
+  if (u.role === 'regional' && x.regionId === u.regionId) return true;
   return false;
 }
 function canSeeActivity(x) {
@@ -118,6 +123,7 @@ function canSeeActivity(x) {
   if (u.role === 'expert') return x.review && x.review.expertId === u.id;
   if (x.createdBy === u.id || x.leaderId === u.id || (x.team || []).some((t) => t.userId === u.id) || (x.organizers || []).includes(u.id)) return true;
   if (['chair', 'regional'].includes(u.role) && rootOf(x.orgId) === rootOf(u.companyId)) return true;
+  if (u.role === 'regional' && x.regionId === u.regionId) return true;
   return false;
 }
 function isChairOf(orgId) {
@@ -199,7 +205,7 @@ const uniqueShare = (reach, size) => (size > 0 ? 1 - Math.exp(-Math.max(0, reach
 const _scoreCache = new Map();
 function cached(key, fn) { if (_scoreCache.has(key)) return _scoreCache.get(key); const v = fn(); _scoreCache.set(key, v); return v; }
 
-/* Рейтинг Молодёжных советов. level: 'all' — каждый совет отдельно; 'groups' — портфельная компания вместе с ДЗО */
+/* Рейтинг Молодёжных советов. level: 'all' — каждый совет отдельно; 'groups' — ДЗО вместе с филиалами */
 function companyScores(opt = {}) {
   const o = { from: null, to: null, region: '', category: '', level: 'all', ...opt };
   return cached('c' + JSON.stringify(o), () => {
@@ -421,7 +427,7 @@ function hasConflict(expert, orgId) {
   const root = rootOf(orgId);
   const list = [...(expert.conflicts || [])];
   if (expert.companyId) list.push(expert.companyId);
-  return list.some((c) => c === orgId || c === root || (rootOf(c) && rootOf(c) !== 'sk' && rootOf(c) === root));
+  return list.some((c) => c === orgId || c === root || (rootOf(c) && rootOf(c) !== headId() && rootOf(c) === root));
 }
 const experts = () => DB.users.filter((u) => u.role === 'expert' && !u.blocked);
 function expertLoad(id) {
@@ -650,9 +656,9 @@ async function exportPdf(filename, node) {
 
 /* ---------- локализация (архитектура: ru — полностью, kk/en — интерфейс навигации) ---------- */
 const I18N = {
-  ru: { feedback: 'Обратная связь', home: 'Главная', companies: 'Компании и советы', people: 'Участники', projects: 'Проекты', events: 'Мероприятия', rating: 'Рейтинг советов', leaders: 'ТОП-100 лидеров', expert: 'Экспертиза', news: 'Новости и медиа', knowledge: 'База знаний', analytics: 'Аналитика', admin: 'Администрирование', me: 'Личный кабинет', methodology: 'Методика рейтинга', search: 'Поиск: люди, проекты, компании', login: 'Войти', register: 'Регистрация', logout: 'Выйти', notifications: 'Уведомления', compare: 'Сравнение компаний', g_main: 'Платформа', g_rating: 'Рейтинги', g_work: 'Управление', demo: 'Демо-версия: все люди, показатели и рейтинги тестовые', slogan: 'Одна молодёжь. Единые возможности. Общие результаты.' },
-  kk: { feedback: 'Кері байланыс', home: 'Басты бет', companies: 'Компаниялар мен кеңестер', people: 'Қатысушылар', projects: 'Жобалар', events: 'Іс-шаралар', rating: 'Кеңестер рейтингі', leaders: 'ТОП-100 көшбасшы', expert: 'Сараптама', news: 'Жаңалықтар мен медиа', knowledge: 'Білім базасы', analytics: 'Аналитика', admin: 'Әкімшілік', me: 'Жеке кабинет', methodology: 'Рейтинг әдістемесі', search: 'Іздеу: адамдар, жобалар, компаниялар', login: 'Кіру', register: 'Тіркелу', logout: 'Шығу', notifications: 'Хабарламалар', compare: 'Компанияларды салыстыру', g_main: 'Платформа', g_rating: 'Рейтингтер', g_work: 'Басқару', demo: 'Демо-нұсқа: барлық адамдар, көрсеткіштер мен рейтингтер сынақтық', slogan: 'Бір жастар. Бірыңғай мүмкіндіктер. Ортақ нәтижелер.' },
-  en: { feedback: 'Feedback', home: 'Home', companies: 'Companies & councils', people: 'People', projects: 'Projects', events: 'Events', rating: 'Council rating', leaders: 'Top-100 leaders', expert: 'Expert review', news: 'News & media', knowledge: 'Knowledge base', analytics: 'Analytics', admin: 'Administration', me: 'My profile', methodology: 'Rating methodology', search: 'Search people, projects, companies', login: 'Sign in', register: 'Sign up', logout: 'Sign out', notifications: 'Notifications', compare: 'Compare companies', g_main: 'Platform', g_rating: 'Ratings', g_work: 'Management', demo: 'Demo: all people, figures and ratings are test data', slogan: 'One youth. Shared opportunities. Common results.' }
+  ru: { feedback: 'Обратная связь', home: 'Главная', companies: 'Организации и советы', people: 'Участники', projects: 'Проекты', events: 'Мероприятия', rating: 'Рейтинг советов', leaders: 'ТОП-100 лидеров', expert: 'Экспертиза', news: 'Новости и медиа', knowledge: 'База знаний', analytics: 'Аналитика', admin: 'Администрирование', me: 'Личный кабинет', methodology: 'Методика рейтинга', search: 'Поиск: люди, проекты, организации', login: 'Войти', register: 'Регистрация', logout: 'Выйти', notifications: 'Уведомления', compare: 'Сравнение советов', g_main: 'Платформа', g_rating: 'Рейтинги', g_work: 'Управление', demo: 'Демо-версия: все люди, показатели и рейтинги тестовые', slogan: 'Одна молодёжь. Единые возможности. Общие результаты.' },
+  kk: { feedback: 'Кері байланыс', home: 'Басты бет', companies: 'Ұйымдар мен кеңестер', people: 'Қатысушылар', projects: 'Жобалар', events: 'Іс-шаралар', rating: 'Кеңестер рейтингі', leaders: 'ТОП-100 көшбасшы', expert: 'Сараптама', news: 'Жаңалықтар мен медиа', knowledge: 'Білім базасы', analytics: 'Аналитика', admin: 'Әкімшілік', me: 'Жеке кабинет', methodology: 'Рейтинг әдістемесі', search: 'Іздеу: адамдар, жобалар, ұйымдар', login: 'Кіру', register: 'Тіркелу', logout: 'Шығу', notifications: 'Хабарламалар', compare: 'Кеңестерді салыстыру', g_main: 'Платформа', g_rating: 'Рейтингтер', g_work: 'Басқару', demo: 'Демо-нұсқа: барлық адамдар, көрсеткіштер мен рейтингтер сынақтық', slogan: 'Бір жастар. Бірыңғай мүмкіндіктер. Ортақ нәтижелер.' },
+  en: { feedback: 'Feedback', home: 'Home', companies: 'Organizations & councils', people: 'People', projects: 'Projects', events: 'Events', rating: 'Council rating', leaders: 'Top-100 leaders', expert: 'Expert review', news: 'News & media', knowledge: 'Knowledge base', analytics: 'Analytics', admin: 'Administration', me: 'My profile', methodology: 'Rating methodology', search: 'Search people, projects, organizations', login: 'Sign in', register: 'Sign up', logout: 'Sign out', notifications: 'Notifications', compare: 'Compare councils', g_main: 'Platform', g_rating: 'Ratings', g_work: 'Management', demo: 'Demo: all people, figures and ratings are test data', slogan: 'One youth. Shared opportunities. Common results.' }
 };
 const t = (k) => (I18N[DB.lang] && I18N[DB.lang][k]) || I18N.ru[k] || k;
 

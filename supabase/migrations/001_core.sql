@@ -211,16 +211,17 @@ $$ select coalesce((select role = 'admin' and not blocked from profiles where id
 create or replace function public.org_root(o text) returns text language sql stable security definer set search_path = public as
 $$ select case when type = 'subsidiary' then parent_id else id end from organizations where id = o $$;
 
--- председатель портфельной компании управляет и её ДЗО; председатель ДЗО — только своим советом
+-- председатель ДЗО управляет и её филиалами; председатель филиала — только своим советом
 create or replace function public.chair_of(o text) returns boolean language sql stable security definer set search_path = public as $$
   select coalesce(public.my_role() = 'chair' and (
     public.my_org() = o or (public.org_root(public.my_org()) = public.my_org() and public.org_root(o) = public.my_org())
   ), false) $$;
 
+-- региональный председатель работает со всеми организациями группы в своём регионе
 create or replace function public.regional_of(o text, r text) returns boolean language sql stable security definer set search_path = public as $$
-  select coalesce(public.my_role() = 'regional' and r = public.my_region() and public.org_root(o) = public.org_root(public.my_org()), false) $$;
+  select coalesce(public.my_role() = 'regional' and r = public.my_region() and exists (select 1 from organizations where id = o), false) $$;
 
--- конфликт интересов: своя организация, её группа (кроме Фонда) и задекларированные организации
+-- конфликт интересов: своя организация, её филиалы (корпоративный центр не распространяется на ДЗО) и задекларированные организации
 create or replace function public.has_conflict(expert text, o text) returns boolean language sql stable security definer set search_path = public as $$
   select coalesce((
     select bool_or(c = o or c = public.org_root(o)
@@ -277,6 +278,7 @@ create policy projects_read on public.projects for select using (
   or (select public.me()) = any(team_ids)
   or review->>'expertId' = (select public.me())
   or ((select public.my_role()) in ('chair', 'regional') and public.org_root(org_id) = public.org_root((select public.my_org())))
+  or ((select public.my_role()) = 'regional' and region_id = (select public.my_region()))
 );
 create policy projects_admin on public.projects for all using ((select public.is_admin())) with check ((select public.is_admin()));
 
@@ -286,6 +288,7 @@ create policy events_read on public.events for select using (
   or created_by = (select public.me()) or (select public.me()) = any(organizer_ids)
   or review->>'expertId' = (select public.me())
   or ((select public.my_role()) in ('chair', 'regional') and public.org_root(org_id) = public.org_root((select public.my_org())))
+  or ((select public.my_role()) = 'regional' and region_id = (select public.my_region()))
 );
 create policy events_admin on public.events for all using ((select public.is_admin())) with check ((select public.is_admin()));
 

@@ -19,7 +19,7 @@ html = f'''<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>JASTAR HUB</title>
-<meta name="description" content="Единая цифровая платформа Молодёжных советов группы АО «Самрук-Қазына»">
+<meta name="description" content="Единая цифровая платформа Молодёжного совета группы компаний АО «Самрук-Энерго»">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap">

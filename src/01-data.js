@@ -4,7 +4,9 @@
    В продакшене эти данные приходят из PostgreSQL (Supabase), см. schema.sql.
    ===================================================================== */
 
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
+/* Подпись оргструктуры: если состав организаций изменится, сохранённые в браузере демо-данные пересоздаются */
+const SEED_SIG = () => ORGS_SEED.map((o) => o.id + ':' + o.type + ':' + (o.parentId || '')).join('|');
 
 const REGIONS_SEED = [
   { id: 'ast', name: 'г. Астана', city: 'Астана', lon: 71.43, lat: 51.13 },
@@ -49,7 +51,7 @@ const KZ_OUTLINE = [
    type: fund — корпоративный центр, portfolio — дочерняя/зависимая организация (ДЗО), subsidiary — филиал ДЗО.
    Численность молодёжи до 35 лет (young) — ОРИЕНТИРОВОЧНАЯ, администратор уточняет её в админ-панели. */
 const ORGS_SEED = [
-  { id: 'se', type: 'fund', parentId: null, name: 'Самрук-Энерго', full: 'АО «Самрук-Энерго»', regionId: 'ast', sector: 'Корпоративный центр группы', young: 160 },
+  { id: 'se', type: 'fund', parentId: null, name: 'Самрук-Энерго', full: 'АО «Самрук-Энерго»', regionId: 'ast', sector: 'Управление группой компаний', young: 160 },
   { id: 'qgp', type: 'portfolio', parentId: 'se', name: 'Qazaq Green Power', full: 'Qazaq Green Power PLC', regionId: 'ast', sector: 'Возобновляемая энергетика', young: 25 },
   { id: 'pves', type: 'portfolio', parentId: 'se', name: 'ПВЭС', full: 'ТОО «ПВЭС»', regionId: 'akm', sector: 'Ветровая генерация', young: 15 },
   { id: 'ewp', type: 'portfolio', parentId: 'se', name: 'Ereymentau Wind Power', full: 'ТОО «Ereymentau Wind Power»', regionId: 'akm', sector: 'Ветровая генерация', young: 12 },
@@ -563,7 +565,7 @@ function seedDB() {
   fbAdd({ userId: null, kind: 'suggestion', subject: 'Общий календарь на месяц', body: 'Хотелось бы видеть мероприятия всех советов в общем календаре на месяц вперёд и получать уведомления о новых.', section: 'Мероприятия', status: 'new', createdAt: tsISO(0) });
 
   const db = {
-    version: SCHEMA_VERSION, seededAt: anchor.toISOString(), lang: 'ru',
+    version: SCHEMA_VERSION, seedSig: SEED_SIG(), seededAt: anchor.toISOString(), lang: 'ru',
     regions, orgs, users, projects, events, achievements, news, knowledge, feedback,
     audit: [], appeals: [], notifications: [], ratingLog: [],
     settings: {

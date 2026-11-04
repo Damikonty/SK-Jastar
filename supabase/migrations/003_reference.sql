@@ -28,7 +28,7 @@ insert into public.regions (id, name, city, lat, lon) values
 on conflict (id) do nothing;
 
 insert into public.organizations (id, type, parent_id, name, full_name, region_id, sector, young, about) values
-  ('se', 'fund', null, 'Самрук-Энерго', 'АО «Самрук-Энерго»', 'ast', 'Корпоративный центр группы', 160, 'Молодёжный совет АО «Самрук-Энерго». Описание заполняет председатель совета.'),
+  ('se', 'fund', null, 'Самрук-Энерго', 'АО «Самрук-Энерго»', 'ast', 'Управление группой компаний', 160, 'Молодёжный совет АО «Самрук-Энерго». Описание заполняет председатель совета.'),
   ('qgp', 'portfolio', 'se', 'Qazaq Green Power', 'Qazaq Green Power PLC', 'ast', 'Возобновляемая энергетика', 25, 'Молодёжный совет Qazaq Green Power PLC. Описание заполняет председатель совета.'),
   ('pves', 'portfolio', 'se', 'ПВЭС', 'ТОО «ПВЭС»', 'akm', 'Ветровая генерация', 15, 'Молодёжный совет ТОО «ПВЭС». Описание заполняет председатель совета.'),
   ('ewp', 'portfolio', 'se', 'Ereymentau Wind Power', 'ТОО «Ereymentau Wind Power»', 'akm', 'Ветровая генерация', 12, 'Молодёжный совет ТОО «Ereymentau Wind Power». Описание заполняет председатель совета.'),

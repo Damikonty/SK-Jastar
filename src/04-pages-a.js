@@ -114,7 +114,7 @@ ACTIONS['map-region'] = (el) => { UI.pr = { ...(UI.pr || {}), region: el.dataset
 
 /* ============================ КОМПАНИИ ============================ */
 route('companies', () => {
-  const f = (UI.co = UI.co || { q: '', type: '', parent: '', region: '' });
+  const f = (UI.co = { q: '', type: '', parent: '', region: '', sort: 'structure', ...(UI.co || {}) });
   const ranks = new Map(companyScores().map((r) => [r.orgId, r]));
   let list = DB.orgs.slice();
   if (f.q) list = list.filter((o) => norm(o.name + ' ' + o.full + ' ' + o.sector).includes(norm(f.q)));
@@ -122,7 +122,8 @@ route('companies', () => {
   if (f.type === 'subsidiary') list = list.filter((o) => o.type === 'subsidiary');
   if (f.parent) list = list.filter((o) => o.id === f.parent || o.parentId === f.parent);
   if (f.region) list = list.filter((o) => o.regionId === f.region || councilMembers(o.id).some((u) => u.regionId === f.region));
-  list.sort((a, b) => ranks.get(a.id).rank - ranks.get(b.id).rank);
+  if (f.sort === 'rating') list.sort((a, b) => ranks.get(a.id).rank - ranks.get(b.id).rank);
+  else { const ord = new Map(orgTree().map((o, i) => [o.id, i])); list.sort((a, b) => ord.get(a.id) - ord.get(b.id)); }
   const parents = DB.orgs.filter((o) => o.type === 'portfolio');
   return `<div class="page">
   ${pageHead(t('companies'), 'Корпоративный центр, дочерние и зависимые организации группы АО «Самрук-Энерго», их филиалы и Молодёжные советы', can('company.edit') && myRole() === 'admin' ? `<a class="btn" href="#admin">${icon('plus', 16)}Добавить организацию</a>` : '')}
@@ -131,9 +132,10 @@ route('companies', () => {
     ${seg('co.type', [['', 'Все'], ['portfolio', 'Корпоративный центр и ДЗО'], ['subsidiary', 'Филиалы']], f.type)}
     ${sel('co-parent', [['', 'Все организации'], ...parents.map((o) => [o.id, groupName(o)])], f.parent, 'data-live="co.parent"')}
     ${sel('co-region', regionOptions('Все регионы'), f.region, 'data-live="co.region"')}
+    ${sel('co-sort', [['structure', 'По структуре группы'], ['rating', 'По месту в рейтинге']], f.sort, 'data-live="co.sort" aria-label="Порядок"')}
   </div>
   <p class="count">${list.length} ${plural(list.length, 'организация', 'организации', 'организаций')}</p>
-  ${list.length ? `<div class="cgrid">${list.map((o) => { const r = ranks.get(o.id); const m = councilMembers(o.id); return `<a class="ccard" href="#company-${o.id}">
+  ${list.length ? `<div class="cgrid">${list.map((o) => { const r = ranks.get(o.id); const m = councilMembers(o.id); return `<a class="ccard ${o.type === 'fund' && f.sort !== 'rating' ? 'head' : ''} ${o.type === 'subsidiary' ? 'branch' : ''}" href="#company-${o.id}">
     <div class="cc-h">${orgLogo(o, 44)}<span><b>${esc(o.name)}</b><small>${esc(o.full)}</small></span></div>
     <div class="cc-chips">${chip(orgTypeLabel(o))}${chip(o.sector)}</div>
     <dl class="cc-m"><div><dt>Молодёжь</dt><dd>${fmt(o.young)}</dd></div><div><dt>В совете</dt><dd>${m.filter((u) => u.verified).length}</dd></div><div><dt>Место</dt><dd>${r.rank}</dd></div><div><dt>Баллы</dt><dd>${fmt1(r.total)}</dd></div></dl>

@@ -385,6 +385,8 @@ button.chip { cursor: pointer; }
 .cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
 .ccard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 12px; transition: border-color .15s, box-shadow .15s; }
 .ccard:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
+.ccard.head { grid-column: 1 / -1; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.ccard.branch { background: var(--surface-2); }
 .cc-h { display: flex; gap: 12px; align-items: center; }
 .cc-h span { min-width: 0; }
 .cc-h b { display: block; font-size: 15px; }
@@ -842,7 +844,9 @@ body.busy .btn.primary, body.busy .modal-f .btn { opacity: .6; pointer-events: n
    В продакшене эти данные приходят из PostgreSQL (Supabase), см. schema.sql.
    ===================================================================== */
 
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
+/* Подпись оргструктуры: если состав организаций изменится, сохранённые в браузере демо-данные пересоздаются */
+const SEED_SIG = () => ORGS_SEED.map((o) => o.id + ':' + o.type + ':' + (o.parentId || '')).join('|');
 
 const REGIONS_SEED = [
   { id: 'ast', name: 'г. Астана', city: 'Астана', lon: 71.43, lat: 51.13 },
@@ -887,7 +891,7 @@ const KZ_OUTLINE = [
    type: fund — корпоративный центр, portfolio — дочерняя/зависимая организация (ДЗО), subsidiary — филиал ДЗО.
    Численность молодёжи до 35 лет (young) — ОРИЕНТИРОВОЧНАЯ, администратор уточняет её в админ-панели. */
 const ORGS_SEED = [
-  { id: 'se', type: 'fund', parentId: null, name: 'Самрук-Энерго', full: 'АО «Самрук-Энерго»', regionId: 'ast', sector: 'Корпоративный центр группы', young: 160 },
+  { id: 'se', type: 'fund', parentId: null, name: 'Самрук-Энерго', full: 'АО «Самрук-Энерго»', regionId: 'ast', sector: 'Управление группой компаний', young: 160 },
   { id: 'qgp', type: 'portfolio', parentId: 'se', name: 'Qazaq Green Power', full: 'Qazaq Green Power PLC', regionId: 'ast', sector: 'Возобновляемая энергетика', young: 25 },
   { id: 'pves', type: 'portfolio', parentId: 'se', name: 'ПВЭС', full: 'ТОО «ПВЭС»', regionId: 'akm', sector: 'Ветровая генерация', young: 15 },
   { id: 'ewp', type: 'portfolio', parentId: 'se', name: 'Ereymentau Wind Power', full: 'ТОО «Ereymentau Wind Power»', regionId: 'akm', sector: 'Ветровая генерация', young: 12 },
@@ -1401,7 +1405,7 @@ function seedDB() {
   fbAdd({ userId: null, kind: 'suggestion', subject: 'Общий календарь на месяц', body: 'Хотелось бы видеть мероприятия всех советов в общем календаре на месяц вперёд и получать уведомления о новых.', section: 'Мероприятия', status: 'new', createdAt: tsISO(0) });
 
   const db = {
-    version: SCHEMA_VERSION, seededAt: anchor.toISOString(), lang: 'ru',
+    version: SCHEMA_VERSION, seedSig: SEED_SIG(), seededAt: anchor.toISOString(), lang: 'ru',
     regions, orgs, users, projects, events, achievements, news, knowledge, feedback,
     audit: [], appeals: [], notifications: [], ratingLog: [],
     settings: {
@@ -1477,9 +1481,11 @@ function loadDB() {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const d = JSON.parse(raw);
-      if (d && d.version === SCHEMA_VERSION) { DB = d; reindex(); return; }
+      if (d && d.version === SCHEMA_VERSION && d.seedSig === SEED_SIG()) { DB = d; reindex(); return; }
     }
   } catch (e) { STORAGE_OK = false; }
+  /* удаляем данные прежних версий (в том числе со старой структурой организаций) */
+  try { Object.keys(localStorage).filter((k) => k.startsWith('jastar-hub:v') && k !== STORE_KEY).forEach((k) => localStorage.removeItem(k)); } catch (e) { /* не критично */ }
   DB = seedDB();
   reindex();
   saveDB(true);
@@ -1532,6 +1538,13 @@ const orgLabel = (id) => (O(id) ? O(id).name : '—');
 const headId = () => ((DB.orgs || []).find((o) => o.type === 'fund') || { id: 'se' }).id;
 const orgTypeLabel = (o) => (!o ? '' : o.type === 'fund' ? 'Корпоративный центр' : o.type === 'portfolio' ? 'ДЗО' : 'Филиал ' + orgLabel(o.parentId));
 const groupName = (o) => { const n = DB.orgs.filter((x) => x.parentId === o.id && x.type === 'subsidiary').length; return o.name + (n ? (n > 1 ? ' с филиалами' : ' с филиалом') : ''); };
+/* Порядок по структуре: корпоративный центр, затем каждое ДЗО со своими филиалами */
+function orgTree() {
+  const out = DB.orgs.filter((o) => o.type === 'fund');
+  DB.orgs.filter((o) => o.type === 'portfolio').forEach((d) => { out.push(d); out.push(...DB.orgs.filter((x) => x.type === 'subsidiary' && x.parentId === d.id)); });
+  DB.orgs.forEach((o) => { if (!out.includes(o)) out.push(o); });
+  return out;
+}
 const rootOptions = (allLabel) => [['', allLabel], ...DB.orgs.filter((o) => o.type !== 'subsidiary').map((o) => [o.id, groupName(o)])];
 const ABBR = { se: 'СЭ', qgp: 'QGP', pves: 'ПВЭС', ewp: 'EWP', sge: 'SGE', shges: 'ШГЭС', mges: 'МГЭС', ukges: 'УКГЭС', bges: 'БГЭС', shulges: 'ШуГЭС', azhk: 'АЖК', azhkes: 'ЭС', ales: 'АлЭС', egres: 'ГРЭС1', egres2: 'ГРЭС2', esc: 'ESC', escoco: 'ОЦО', semey: 'СмЭ', oskemen: 'ОсЭ', ktec: 'КТЭЦ' };
 const ORG_HUE = { se: 192, qgp: 150, pves: 168, ewp: 176, sge: 120, shges: 205, mges: 214, ukges: 222, bges: 230, shulges: 238, azhk: 32, ales: 4, egres: 268, egres2: 282, esc: 250, semey: 44, oskemen: 340, ktec: 20 };
@@ -2659,7 +2672,7 @@ ACTIONS['map-region'] = (el) => { UI.pr = { ...(UI.pr || {}), region: el.dataset
 
 /* ============================ КОМПАНИИ ============================ */
 route('companies', () => {
-  const f = (UI.co = UI.co || { q: '', type: '', parent: '', region: '' });
+  const f = (UI.co = { q: '', type: '', parent: '', region: '', sort: 'structure', ...(UI.co || {}) });
   const ranks = new Map(companyScores().map((r) => [r.orgId, r]));
   let list = DB.orgs.slice();
   if (f.q) list = list.filter((o) => norm(o.name + ' ' + o.full + ' ' + o.sector).includes(norm(f.q)));
@@ -2667,7 +2680,8 @@ route('companies', () => {
   if (f.type === 'subsidiary') list = list.filter((o) => o.type === 'subsidiary');
   if (f.parent) list = list.filter((o) => o.id === f.parent || o.parentId === f.parent);
   if (f.region) list = list.filter((o) => o.regionId === f.region || councilMembers(o.id).some((u) => u.regionId === f.region));
-  list.sort((a, b) => ranks.get(a.id).rank - ranks.get(b.id).rank);
+  if (f.sort === 'rating') list.sort((a, b) => ranks.get(a.id).rank - ranks.get(b.id).rank);
+  else { const ord = new Map(orgTree().map((o, i) => [o.id, i])); list.sort((a, b) => ord.get(a.id) - ord.get(b.id)); }
   const parents = DB.orgs.filter((o) => o.type === 'portfolio');
   return `<div class="page">
   ${pageHead(t('companies'), 'Корпоративный центр, дочерние и зависимые организации группы АО «Самрук-Энерго», их филиалы и Молодёжные советы', can('company.edit') && myRole() === 'admin' ? `<a class="btn" href="#admin">${icon('plus', 16)}Добавить организацию</a>` : '')}
@@ -2676,9 +2690,10 @@ route('companies', () => {
     ${seg('co.type', [['', 'Все'], ['portfolio', 'Корпоративный центр и ДЗО'], ['subsidiary', 'Филиалы']], f.type)}
     ${sel('co-parent', [['', 'Все организации'], ...parents.map((o) => [o.id, groupName(o)])], f.parent, 'data-live="co.parent"')}
     ${sel('co-region', regionOptions('Все регионы'), f.region, 'data-live="co.region"')}
+    ${sel('co-sort', [['structure', 'По структуре группы'], ['rating', 'По месту в рейтинге']], f.sort, 'data-live="co.sort" aria-label="Порядок"')}
   </div>
   <p class="count">${list.length} ${plural(list.length, 'организация', 'организации', 'организаций')}</p>
-  ${list.length ? `<div class="cgrid">${list.map((o) => { const r = ranks.get(o.id); const m = councilMembers(o.id); return `<a class="ccard" href="#company-${o.id}">
+  ${list.length ? `<div class="cgrid">${list.map((o) => { const r = ranks.get(o.id); const m = councilMembers(o.id); return `<a class="ccard ${o.type === 'fund' && f.sort !== 'rating' ? 'head' : ''} ${o.type === 'subsidiary' ? 'branch' : ''}" href="#company-${o.id}">
     <div class="cc-h">${orgLogo(o, 44)}<span><b>${esc(o.name)}</b><small>${esc(o.full)}</small></span></div>
     <div class="cc-chips">${chip(orgTypeLabel(o))}${chip(o.sector)}</div>
     <dl class="cc-m"><div><dt>Молодёжь</dt><dd>${fmt(o.young)}</dd></div><div><dt>В совете</dt><dd>${m.filter((u) => u.verified).length}</dd></div><div><dt>Место</dt><dd>${r.rank}</dd></div><div><dt>Баллы</dt><dd>${fmt1(r.total)}</dd></div></dl>

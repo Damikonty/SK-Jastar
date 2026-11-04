@@ -114,6 +114,8 @@ function drawCharts() {
 }
 function niceMax(v) { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); const n = v / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p; }
 const SER = ['s1', 's2', 's3', 's4'];
+/* Для целых значений шаг сетки тоже целый: 0, 1, 2 вместо 0, 0,25, 0,5 */
+function tickCount(maxV, series) { if (!series.every((sr) => sr.values.every((v) => Number.isInteger(v || 0)))) return 4; return [4, 5, 2, 1].find((k) => Number.isInteger(maxV / k)) || 4; }
 function legend(series) { return series.length > 1 ? `<div class="legend">${series.map((s, i) => `<span><i class="sw ${SER[i]}"></i>${esc(s.name)}</span>`).join('')}</div>` : ''; }
 function topRoundBar(x, y, w, h, r = 3) { if (h <= 0) return ''; r = Math.min(r, w / 2, h); return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`; }
 const DRAW = {
@@ -124,7 +126,8 @@ const DRAW = {
     const x = (i) => L + (n === 1 ? (W - L - R) / 2 : (i * (W - L - R)) / (n - 1));
     const y = (v) => T + (H - T - B) * (1 - v / maxV);
     let g = '';
-    for (let k = 0; k <= 4; k++) { const v = (maxV * k) / 4; g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="${k ? 'grid' : 'axis'}"/><text x="${L - 8}" y="${y(v) + 4}" class="tick" text-anchor="end">${fmtY(v)}</text>`; }
+    const nT = tickCount(maxV, series);
+    for (let k = 0; k <= nT; k++) { const v = (maxV * k) / nT; g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="${k ? 'grid' : 'axis'}"/><text x="${L - 8}" y="${y(v) + 4}" class="tick" text-anchor="end">${fmtY(v)}</text>`; }
     const step = Math.ceil(n / Math.max(2, Math.floor(W / 70)));
     labels.forEach((l, i) => { if (i % step === 0 || i === n - 1) g += `<text x="${x(i)}" y="${H - 8}" class="tick" text-anchor="middle">${esc(l)}</text>`; });
     series.forEach((s, si) => {
@@ -146,7 +149,8 @@ const DRAW = {
     const bw = Math.max(4, Math.min(28, (gw * 0.72 - (m - 1) * 2) / m));
     const y = (v) => T + (H - T - B) * (1 - v / maxV);
     let g = '';
-    for (let k = 0; k <= 4; k++) { const v = (maxV * k) / 4; g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="${k ? 'grid' : 'axis'}"/><text x="${L - 8}" y="${y(v) + 4}" class="tick" text-anchor="end">${fmtY(v)}</text>`; }
+    const nT = tickCount(maxV, series);
+    for (let k = 0; k <= nT; k++) { const v = (maxV * k) / nT; g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="${k ? 'grid' : 'axis'}"/><text x="${L - 8}" y="${y(v) + 4}" class="tick" text-anchor="end">${fmtY(v)}</text>`; }
     const step = Math.ceil(n / Math.max(2, Math.floor(W / 64)));
     labels.forEach((l, i) => {
       const gx = L + i * gw + (gw - (bw * m + (m - 1) * 2)) / 2;

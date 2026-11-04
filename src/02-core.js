@@ -15,7 +15,7 @@ function loadDB() {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const d = JSON.parse(raw);
-      if (d && d.version === SCHEMA_VERSION && d.seedSig === SEED_SIG()) { DB = d; reindex(); return; }
+      if (d && d.version === SCHEMA_VERSION && d.seedSig === SEED_SIG()) { DB = d; upgradeDB(); reindex(); saveDB(true); return; }
     }
   } catch (e) { STORAGE_OK = false; }
   /* удаляем данные прежних версий (в том числе со старой структурой организаций) */
@@ -23,6 +23,18 @@ function loadDB() {
   DB = seedDB();
   reindex();
   saveDB(true);
+}
+/* Дополняет сохранённые в браузере демо-данные новыми разделами, не сбрасывая их */
+function upgradeDB() {
+  if (!Array.isArray(DB.vacancies)) DB.vacancies = demoVacancies();
+  DB.settings = DB.settings || {};
+  if (!Array.isArray(DB.settings.people)) DB.settings.people = JSON.parse(JSON.stringify(CONTACT_PEOPLE_DEFAULT));
+  DB.orgs.forEach((o) => {
+    if (o.profile) return;
+    o.profile = JSON.parse(JSON.stringify(ORG_PROFILE[o.id] || {}));
+    const seed = ORGS_SEED.find((x) => x.id === o.id);
+    if (seed && ['esc', 'semey', 'oskemen', 'ktec'].includes(o.id)) { o.regionId = seed.regionId; o.sector = seed.sector; }
+  });
 }
 let _saveT = null;
 function saveDB(now) {

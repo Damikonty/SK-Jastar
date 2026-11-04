@@ -66,15 +66,64 @@ const ORGS_SEED = [
   { id: 'ales', type: 'portfolio', parentId: 'se', name: 'АлЭС', full: 'АО «АлЭС»', regionId: 'alm', sector: 'Тепло- и электрогенерация', young: 700 },
   { id: 'egres', type: 'portfolio', parentId: 'se', name: 'Экибастузская ГРЭС-1', full: 'ТОО «Экибастузская ГРЭС-1»', regionId: 'pav', sector: 'Тепловая генерация', young: 550 },
   { id: 'egres2', type: 'portfolio', parentId: 'se', name: 'Экибастузская ГРЭС-2', full: 'АО «Станция Экибастузская ГРЭС-2»', regionId: 'pav', sector: 'Тепловая генерация', young: 450 },
-  { id: 'esc', type: 'portfolio', parentId: 'se', name: 'Energy Solution Center', full: 'ТОО «Energy Solution Center»', regionId: 'ast', sector: 'Сервисная компания группы', young: 60 },
+  { id: 'esc', type: 'portfolio', parentId: 'se', name: 'Energy Solution Center', full: 'ТОО «Energy Solution Center»', regionId: 'pav', sector: 'Теплоэнергетика (Экибастузская ТЭЦ)', young: 60 },
   { id: 'escoco', type: 'subsidiary', parentId: 'esc', name: 'ОЦО Energy Solution Center', full: 'Филиал ТОО «Energy Solution Center» — общий центр обслуживания', regionId: 'ast', sector: 'Общий центр обслуживания', young: 80 },
-  { id: 'semey', type: 'portfolio', parentId: 'se', name: 'Семей Энерго', full: 'ТОО «Семей Энерго»', regionId: 'aba', sector: 'Энергоснабжение', young: 300 },
-  { id: 'oskemen', type: 'portfolio', parentId: 'se', name: 'Оскемен Энерго', full: 'ТОО «Оскемен Энерго»', regionId: 'vko', sector: 'Энергоснабжение', young: 250 },
-  { id: 'ktec', type: 'portfolio', parentId: 'se', name: 'Кокшетауская ТЭЦ', full: 'ТОО «Кокшетауская ТЭЦ»', regionId: 'akm', sector: 'Теплоэнергетика', young: 30 }
+  { id: 'semey', type: 'portfolio', parentId: 'se', name: 'Семей Энерго', full: 'ТОО «Семей Энерго»', regionId: 'aba', sector: 'Строительство новой ТЭЦ', young: 300 },
+  { id: 'oskemen', type: 'portfolio', parentId: 'se', name: 'Оскемен Энерго', full: 'ТОО «Оскемен Энерго»', regionId: 'vko', sector: 'Строительство новой ТЭЦ', young: 250 },
+  { id: 'ktec', type: 'portfolio', parentId: 'se', name: 'Кокшетауская ТЭЦ', full: 'ТОО «Кокшетауская ТЭЦ»', regionId: 'akm', sector: 'Строительство новой ТЭЦ', young: 30 }
 ];
 
 /* Организации, сотрудники которых работают в разных регионах (сейчас таких нет: все работают по месту организации) */
 const NETWORK_ORGS = [];
+
+/* Профили организаций для разделов «Активы группы» и «Оргструктура».
+   Факты — по открытым данным сайта samruk-energy.kz и публикациям СМИ (ссылка — в src).
+   check: true — описание составлено по названию организации и требует уточнения.
+   mw — установленная электрическая мощность, МВт; gcal — тепловая, Гкал/ч.
+   holding: 'qgp' — актив в периметре Qazaq Green Power PLC.
+   Численность персонала (staff) не публикуется: её вносит председатель совета или администратор. */
+const SE_SRC = 'https://samruk-energy.kz/en/company/group-of-companies/';
+const ORG_PROFILE = {
+  se: { kind: 'center', what: 'Корпоративный центр группы: управляет дочерними организациями, определяет стратегию развития, инвестиционные и финансовые решения группы. Входит в группу АО «Самрук-Қазына».', city: 'г. Астана', address: 'г. Астана, пр. Кабанбай батыра, 15А, блок Б', site: 'samruk-energy.kz', src: SE_SRC.replace('/en/', '/ru/') },
+  qgp: { kind: 'holding', what: 'Компания группы по гидро- и возобновляемой энергетике: модернизация действующих и строительство новых генерирующих мощностей, новые энергетические технологии. Создана 4 ноября 2022 года.', city: 'г. Астана', share: '100% — АО «Самрук-Энерго»', since: '2022', objects: ['Мойнакская ГЭС', 'Шардаринская ГЭС', 'Усть-Каменогорская ГЭС', 'Шульбинская ГЭС', 'Бухтарминская ГЭС', 'Samruk-Green Energy', 'ПВЭС'], src: SE_SRC + 'qgp-plc' },
+  pves: { kind: 'res', holding: 'qgp', what: 'Первая ветровая электрическая станция: производит электроэнергию на 22 ветроустановках мощностью 2,05 МВт каждая. Введена в эксплуатацию в 2015 году.', city: 'Район г. Ерейментау, Акмолинская область', mw: 45, objects: ['ВЭС 45 МВт, 22 ветроустановки'], since: '2015', site: 'pves.kz', src: SE_SRC + 'pves' },
+  ewp: { kind: 'res', what: 'Производство электроэнергии из возобновляемых источников: ветровая электростанция 50 МВт в районе Ерейментау с возможностью расширения до 300 МВт. Компания создана в 2011 году.', city: 'Район г. Ерейментау, Акмолинская область', capText: '50 МВт', share: '100% — АО «Самрук-Энерго»', since: '2011', site: 'ewp.kz', src: SE_SRC + 'ewp' },
+  sge: { kind: 'res', holding: 'qgp', what: 'Солнечные и ветровые электростанции в Алматинской области, проектирование и строительство объектов ВИЭ. Создана в 2012 году.', city: 'г. Конаев, г. Алматы и Алматинская область', mw: 8.6, objects: ['СЭС 2 МВт, г. Конаев (2013)', 'СЭС 416 кВт, район г. Конаев', 'СЭС 1 МВт, мкр. Алатау, г. Алматы', 'ВЭС 5 МВт, с. Нурлы, Енбекшиказахский район', 'Проект: СЭС 50 МВт в районе Капшагая'], since: '2012', src: SE_SRC + 'too-samruk-green-energy' },
+  shges: { kind: 'hydro', holding: 'qgp', what: 'Гидроэлектростанция на реке Сырдарья — последняя в каскаде перед Аральским морем. Идёт модернизация с ростом мощности до 126 МВт.', city: 'г. Шардара, Туркестанская область', mw: 100, site: 'sharges.kz', src: SE_SRC + 'ao-shardarinskaya-ges' },
+  mges: { kind: 'hydro', holding: 'qgp', what: 'Мойнакская ГЭС имени У. Д. Кантаева: работает на полную мощность в утренние и вечерние пики энергосистемы, вырабатывает около 1 млрд кВт·ч в год. Запущена в 2012 году.', city: 'р. Чарын, Алматинская область', mw: 300, since: '2012', src: 'https://informburo.kz/stati/kak-rabotaet-moynakskaya-ges-obespechivayushchaya-energiey-pyatuyu-chast-almatinskoy-oblasti.html' },
+  ukges: { kind: 'hydro', holding: 'qgp', what: 'ГЭС на реке Иртыш на северо-восточной окраине Усть-Каменогорска, среднемноголетняя выработка — 1,58 млрд кВт·ч. В периметре Qazaq Green Power с февраля 2025 года.', city: 'г. Усть-Каменогорск, ВКО', mw: 331.2, src: SE_SRC + 'ao-ust-kamenogorskaya-ges' },
+  bges: { kind: 'hydro', holding: 'qgp', what: 'Вторая по мощности ГЭС Казахстана, на реке Иртыш; образует Бухтарминское водохранилище объёмом 49,6 млрд м³. Активы до конца 2028 года в концессии у ТОО «Казцинк». В периметре Qazaq Green Power с сентября 2025 года.', city: 'г. Серебрянск, ВКО', mw: 675, site: 'bges.kz', src: 'https://en.orda.kz/samruq-energo-transfers-bukhtarma-hydroelectric-power-plant-to-subsidiary-qazaq-green-power-8754' },
+  shulges: { kind: 'hydro', holding: 'qgp', what: 'Крупнейшая по установленной мощности ГЭС Казахстана, на реке Иртыш. В периметре Qazaq Green Power с февраля 2025 года.', city: 'пос. Шульбинск, Абайская область', mw: 702, src: 'https://kapital.kz/finance/134807/ust-kamenogorskuyu-i-shul-binskuyu-g-es-peredali-dochke-samruk-energo.html' },
+  azhk: { kind: 'grid', what: 'Региональная электросетевая компания юга Казахстана: передача и распределение электроэнергии в г. Алматы и Алматинской области — от побережья Балхаша до границы с Китаем.', city: 'г. Алматы и Алматинская область', objects: ['209 подстанций 35 кВ и выше', '6 762 трансформаторные подстанции 6–10/0,4 кВ', 'Около 30,6 тыс. км линий 0,4–220 кВ'], site: 'azhk.kz', src: SE_SRC + 'ao-alatau-zharyk-kompaniyasy' },
+  azhkes: { kind: 'grid', what: 'Филиал АО «Алатау Жарык Компаниясы»: работа с потребителями — договоры энергоснабжения, расчёты и обслуживание абонентов.', city: 'г. Алматы', check: true },
+  ales: { kind: 'thermal', what: 'Производство электрической и тепловой энергии для г. Алматы и Алматинской области; естественная монополия по производству тепла.', city: 'г. Алматы и Алматинская область', objects: ['ТЭЦ-1', 'ТЭЦ-2', 'ТЭЦ-3', 'Капшагайская ГЭС', 'Каскад ГЭС', 'Западный тепловой комплекс', 'ПРП «Энергоремонт»'], share: '100% — АО «Самрук-Энерго»', site: 'ales.kz', src: SE_SRC + 'ao-almatinskie-elektricheskie-stantsii' },
+  egres: { kind: 'thermal', what: 'Крупнейшая электростанция Казахстана: конденсационная ГРЭС на экибастузском угле, 8 энергоблоков по 500 МВт.', city: 'г. Экибастуз, Павлодарская область', mw: 4000, share: '100% — АО «Самрук-Энерго»', site: 'gres1.kz', src: SE_SRC + 'too-ekibastuzskaya-gres-1' },
+  egres2: { kind: 'thermal', what: 'Конденсационная электростанция на высокозольном экибастузском угле: 2 энергоблока по 500 МВт.', city: 'Павлодарская область, район г. Экибастуза', mw: 1000, share: '50% — АО «Самрук-Энерго», 50% — АО «Самрук-Қазына»', site: 'gres2.kz', src: SE_SRC + 'ao-stantsiya-ekibastuzskaya-gres-2' },
+  esc: { kind: 'thermal', what: 'Экибастузская ТЭЦ — единственный поставщик централизованного тепла для жителей г. Экибастуза.', city: 'г. Экибастуз, Павлодарская область', mw: 12, gcal: 750, objects: ['Экибастузская ТЭЦ'], share: '100%, в доверительном управлении АО «Самрук-Энерго»', site: 'ekibastec.kz', src: SE_SRC + 'too-energy-solutions-center' },
+  escoco: { kind: 'service', what: 'Общий центр обслуживания компаний группы: типовые учётные, кадровые и другие сервисные операции.', check: true },
+  semey: { kind: 'project', what: 'Строительство новой ТЭЦ в г. Семей. EPC-контракт подписан 30 января 2026 года, ввод — IV квартал 2029 года.', city: 'г. Семей, Абайская область', check: true, src: 'https://www.zakon.kz/ekonomika-biznes/6513653-kogda-zavershitsya-stroitelstvo-trekh-novykh-tets-rasskazali-v-samrukenergo.html' },
+  oskemen: { kind: 'project', what: 'Строительство новой ТЭЦ в г. Усть-Каменогорск. EPC-контракт подписан 30 января 2026 года, ввод — IV квартал 2029 года.', city: 'г. Усть-Каменогорск, ВКО', check: true, src: 'https://www.zakon.kz/ekonomika-biznes/6513653-kogda-zavershitsya-stroitelstvo-trekh-novykh-tets-rasskazali-v-samrukenergo.html' },
+  ktec: { kind: 'project', what: 'Строительство новой ТЭЦ в г. Кокшетау по технологии «чистого угля». Ввод — I квартал 2029 года.', city: 'г. Кокшетау, Акмолинская область', src: 'https://kapital.kz/economic/143064/tec-v-kokshetau-stroyat-po-tehnologii-chistogo-uglya.html' }
+};
+
+/* Ключевые контакты по умолчанию (администратор меняет их на странице «Контакты») */
+const CONTACT_PEOPLE_DEFAULT = [
+  { id: 'author', role: 'Руководитель проекта JASTAR HUB', name: 'Сабанов Дамир Бисембаевич', position: 'Член Молодёжного совета АО «Самрук-Энерго»', org: 'АО «Самрук-Энерго», г. Астана', topics: 'Развитие платформы, идеи и предложения, сотрудничество с советами ДЗО', email: '', phone: '', telegram: '' },
+  { id: 'sysadmin', role: 'Администратор системы', name: '', position: '', org: '', topics: 'Доступ и роли, учётные записи, восстановление входа, ошибки на сайте', email: '', phone: '', telegram: '' }
+];
+const QSAMRUK_URL = 'https://www.qsamruk.kz/';
+/* Тестовые вакансии демо-версии (в рабочей версии их добавляют администратор и председатели) */
+function demoVacancies(base = new Date()) {
+  const d = (n) => { const x = new Date(base); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
+  return [
+    ['ales', 'Инженер-теплотехник', 'Алматы', 'job', 21, 'Обслуживание основного оборудования ТЭЦ, участие в ремонтной кампании. Опыт работы от 1 года.'],
+    ['se', 'Стажёр в департамент цифровизации', 'Астана', 'intern', 14, 'Оплачиваемая стажировка на 3 месяца для студентов последних курсов и выпускников.'],
+    ['egres', 'Машинист энергоблока', 'Экибастуз', 'job', 30, 'Эксплуатация энергоблока 500 МВт. Профильное образование, готовность к сменному графику.'],
+    ['qgp', 'Ведущий специалист по проектам ВИЭ', 'Астана', 'job', null, 'Сопровождение проектов ветровых и солнечных станций: от технико-экономического обоснования до ввода.'],
+    ['azhk', 'Электромонтёр по ремонту воздушных линий', 'Алматы', 'job', 10, 'Ремонт и обслуживание воздушных линий 0,4–10 кВ. Группа по электробезопасности не ниже III.'],
+    ['shges', 'Программа «Молодой специалист»', 'Шардара', 'program', 40, 'Годовая программа адаптации для выпускников энергетических специальностей с наставником.']
+  ].map(([orgId, title, city, kind, dl, description], i) => ({ id: 'vac' + (i + 1), orgId, title, city, kind, deadline: dl == null ? null : d(dl), url: QSAMRUK_URL, description, status: 'open', createdBy: null, createdAt: d(-i - 1) + 'T09:00:00.000Z', demo: true }));
+}
 
 const CATS = [
   { id: 'prof', name: 'Профессиональное развитие', short: 'Проф. развитие', icon: 'growth', color: '#2f62d0' },
@@ -252,6 +301,7 @@ function seedDB() {
   const orgs = ORGS_SEED.map((o) => ({
     ...o,
     about: `Молодёжный совет ${o.full} объединяет сотрудников до 35 лет и реализует проекты в области профессионального развития, социальной ответственности и корпоративной культуры. Описание и показатели — тестовые.`,
+    profile: JSON.parse(JSON.stringify(ORG_PROFILE[o.id] || {})),
     council: { chairId: null, founded: 2014 + rint(0, 9), regionalReps: [] },
     demo: true
   }));
@@ -567,12 +617,14 @@ function seedDB() {
   const db = {
     version: SCHEMA_VERSION, seedSig: SEED_SIG(), seededAt: anchor.toISOString(), lang: 'ru',
     regions, orgs, users, projects, events, achievements, news, knowledge, feedback,
+    vacancies: demoVacancies(anchor),
     audit: [], appeals: [], notifications: [], ratingLog: [],
     settings: {
       wCompany: { projects: 25, reach: 20, social: 15, prof: 15, inter: 10, innov: 10, info: 5 },
       wPerson: { contrib: 30, lead: 20, init: 20, volunteer: 10, inter: 10, prof: 10 },
       infoCap: 12,
-      contacts: {}
+      contacts: {},
+      people: JSON.parse(JSON.stringify(CONTACT_PEOPLE_DEFAULT))
     },
     session: { userId: null },
     demoAccounts: {

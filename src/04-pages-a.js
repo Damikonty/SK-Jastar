@@ -167,6 +167,7 @@ route('company', (id) => {
     const confE = DB.events.filter((e) => e.orgId === id && e.status === 'confirmed');
     body = `<div class="grid g-2-1"><div class="stack-v">
       ${card('О компании и Молодёжном совете', `<p>${esc(o.about)}</p><dl class="dl2"><div><dt>Полное наименование</dt><dd>${esc(o.full)}</dd></div><div><dt>Отрасль</dt><dd>${esc(o.sector)}</dd></div><div><dt>Регион головного офиса</dt><dd>${esc((RG(o.regionId) || {}).name)}</dd></div><div><dt>Совет создан</dt><dd>${o.council.founded} г.</dd></div>${o.parentId ? `<div><dt>Входит в группу</dt><dd>${orgLink(o.parentId)}</dd></div>` : ''}</dl>`, own ? `<button class="btn sm ghost" data-act="company-edit" data-id="${id}">${icon('edit', 15)}Редактировать</button>` : '')}
+      ${assetCard(o)}
       ${card('Подтверждённая активность по месяцам', chart('line', { labels: ms.map((m) => m.label), series: [{ name: 'Проекты', values: ms.map((m) => confP.filter((p) => p.end.slice(0, 7) === m.key).length) }, { name: 'Мероприятия', values: ms.map((m) => confE.filter((e) => e.date.slice(0, 7) === m.key).length) }], h: 220 }))}
     </div><div class="stack-v">
       ${card('Председатель совета', chair ? `<a class="person-l" href="#person-${chair.id}">${avatar(chair, 64)}<span><b>${esc(chair.name)}</b><small>${esc(chair.position)}</small><small>Председатель Молодёжного совета</small></span></a>${personContacts(chair) ? `<div class="chair-ct">${personContacts(chair)}</div>` : ''}` : '<p class="muted">Не назначен</p>')}

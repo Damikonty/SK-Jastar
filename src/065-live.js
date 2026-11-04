@@ -20,7 +20,7 @@ const USER_COLS = ['id', 'role', 'companyId', 'regionId', 'councilRole', 'verifi
 const omit = (o, keys) => { const r = { ...o }; keys.forEach((k) => delete r[k]); return r; };
 const ROW = {
   region: (r) => ({ id: r.id, name: r.name, city: r.city, lat: +r.lat, lon: +r.lon }),
-  org: (r) => ({ id: r.id, type: r.type, parentId: r.parent_id, name: r.name, full: r.full_name, regionId: r.region_id, sector: r.sector || '', young: r.young, about: r.about || '', council: { chairId: null, founded: null, regionalReps: [], ...(r.council || {}) }, demo: r.is_demo }),
+  org: (r) => ({ id: r.id, type: r.type, parentId: r.parent_id, name: r.name, full: r.full_name, regionId: r.region_id, sector: r.sector || '', young: r.young, about: r.about || '', profile: r.profile && Object.keys(r.profile).length ? r.profile : JSON.parse(JSON.stringify(ORG_PROFILE[r.id] || {})), council: { chairId: null, founded: null, regionalReps: [], ...(r.council || {}) }, demo: r.is_demo }),
   user: (r) => ({ skills: [], media: [], position: '', city: '', bio: '', ...(r.data || {}), name: (r.data && r.data.name) || 'Без имени', id: r.id, role: r.role, companyId: r.org_id, regionId: r.region_id || 'ast', councilRole: r.council_role, verified: r.verified, councilRejected: r.council_rejected, blocked: r.blocked, conflicts: r.conflicts || [], demo: r.is_demo }),
   project: (r) => ({ team: [], kpis: [], media: [], partnerOrgIds: [], ...(r.data || {}), id: r.id, orgId: r.org_id, regionId: r.region_id, category: r.category, status: r.status, createdBy: r.created_by, leaderId: r.leader_id, review: r.review, history: r.history || [], comments: r.comments || [], submittedAt: r.submitted_at, demo: r.is_demo }),
   event: (r) => ({ media: [], ...(r.data || {}), id: r.id, orgId: r.org_id, regionId: r.region_id, category: r.category, status: r.status, createdBy: r.created_by, organizers: r.organizer_ids || [], registered: r.registered || [], date: r.event_date, review: r.review, history: r.history || [], submittedAt: r.submitted_at, demo: r.is_demo }),
@@ -94,6 +94,7 @@ async function liveLoad() {
     fetchAll('news'), fetchAll('knowledge'), fetchAll('settings'), fetchAll('rating_log', 'ts')
   ]);
   const feedbackRows = await fetchAll('feedback', 'created_at').catch(() => []);
+  const vacRows = await fetchAll('vacancies', 'created_at').catch(() => []);
   let notifs = [], appeals = [], audits = [];
   if (uidNow) [notifs, appeals] = await Promise.all([fetchAll('notifications', 'ts'), fetchAll('appeals')]);
   const st = settingsRows[0] || {};
@@ -102,9 +103,9 @@ async function liveLoad() {
     version: SCHEMA_VERSION, seededAt: new Date().toISOString(), lang,
     regions: regions.map(ROW.region), orgs: orgs.map(ROW.org), users: profiles.map(ROW.user),
     projects: projects.map(ROW.project), events: events.map(ROW.event), achievements: achs.map(ROW.achievement),
-    news: news.map(ROW.news), knowledge: kb.map(ROW.kb), appeals: appeals.map(ROW.appeal), feedback: feedbackRows.map(ROW.feedback),
+    news: news.map(ROW.news), knowledge: kb.map(ROW.kb), appeals: appeals.map(ROW.appeal), feedback: feedbackRows.map(ROW.feedback), vacancies: vacRows.map(ROW.vacancy),
     notifications: notifs.map(ROW.notif), audit: [], ratingLog: rlog.map(ROW.rlog).reverse(),
-    settings: { wCompany: st.w_company || { projects: 25, reach: 20, social: 15, prof: 15, inter: 10, innov: 10, info: 5 }, wPerson: st.w_person || { contrib: 30, lead: 20, init: 20, volunteer: 10, inter: 10, prof: 10 }, infoCap: st.info_cap || 12, contacts: st.contacts || {} },
+    settings: { wCompany: st.w_company || { projects: 25, reach: 20, social: 15, prof: 15, inter: 10, innov: 10, info: 5 }, wPerson: st.w_person || { contrib: 30, lead: 20, init: 20, volunteer: 10, inter: 10, prof: 10 }, infoCap: st.info_cap || 12, contacts: st.contacts || {}, people: Array.isArray(st.people) ? st.people : JSON.parse(JSON.stringify(CONTACT_PEOPLE_DEFAULT)) },
     session: { userId: uidNow }, demoAccounts: {}
   };
   reindex();
@@ -546,10 +547,12 @@ async function seedLive() {
   const kb = S.knowledge.map((k) => ({ id: k.id, org_id: k.orgId, author_id: me().id, kind: k.kind, data: dataOf(k, ['id', 'orgId', 'authorId', 'kind', 'demo']), is_demo: true }));
   const appeals = S.appeals.map((a) => ({ id: 'apdemo' + a.id, entity_type: a.entityType, entity_id: a.entityId, user_id: a.userId, reason: a.reason, status: a.status, resolution: a.resolution, ts: a.ts, is_demo: true }));
   const fbRows = (S.feedback || []).map((f) => ({ id: 'fbdemo' + f.id, user_id: f.userId, kind: f.kind, subject: f.subject || '', body: f.body, section: f.section, target_type: f.targetType, target_id: f.targetId, is_public: f.isPublic, status: f.status, reply: f.reply || '', replied_by: f.repliedBy ? me().id : null, replied_at: f.repliedAt, contact: f.contact || {}, is_demo: true, created_at: f.createdAt }));
+  const vacs = demoVacancies().map((v) => ({ id: 'vdemo' + v.id, org_id: v.orgId, title: v.title, city: v.city, kind: v.kind, url: v.url, deadline: v.deadline, description: v.description, status: v.status, created_by: me().id, is_demo: true }));
   const batches = [['profiles', profiles], ['projects', projects], ['events', events], ['achievements', achs], ['news', news], ['knowledge', kb], ['appeals', appeals], ['feedback', fbRows]];
   for (const [table, rows] of batches) {
     for (let i = 0; i < rows.length; i += 100) await tbl(sb.from(table).insert(rows.slice(i, i + 100)));
   }
+  { const { error } = await sb.from('vacancies').insert(vacs); if (error) console.warn('Тестовые вакансии не загружены (нужна миграция 006):', error.message); }
   for (const o of S.orgs) {
     const cur = O(o.id); if (!cur) continue;
     const council = { ...cur.council, chairId: cur.council.chairId && U(cur.council.chairId) && !U(cur.council.chairId).demo ? cur.council.chairId : o.council.chairId, regionalReps: uniq([...(cur.council.regionalReps || []), ...(o.council.regionalReps || [])]), founded: cur.council.founded || o.council.founded };

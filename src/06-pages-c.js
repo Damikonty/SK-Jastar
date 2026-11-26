@@ -14,11 +14,11 @@ route('rating', () => {
   const pod = (r, cls) => r ? `<a class="pod ${cls}" href="#company-${r.orgId}"><span class="pod-n">${r.rank}</span>${orgLogo(O(r.orgId), 52)}<b>${esc(O(r.orgId).name)}</b><span class="pod-s">${fmt1(r.total)}<small> баллов</small></span><span class="pod-m">${pct(r.engagement)} вовлечённость · ${r.activities} ${plural(r.activities, 'активность', 'активности', 'активностей')}</span></a>` : '';
   const pLabel = PERIODS.find((p) => p.id === f.period).label.toLowerCase();
   return `<div class="page">
-    ${pageHead('ТОП Молодёжных советов группы «Самрук-Энерго»', `Баллы из 100 по открытой методике. Учитываются только подтверждённые экспертами активности, показатели нормированы по численности молодёжи. ${testChip()}`, `<button class="btn ghost" data-act="rt-export">${icon('download', 16)}Excel</button><a class="btn ghost" href="#methodology">${icon('scale', 16)}Методика</a>`, 'Рейтинг')}
+    ${pageHead('ТОП Молодёжных советов ' + BRAND.groupOf, `Баллы из 100 по открытой методике. Учитываются только подтверждённые экспертами активности, показатели нормированы по численности молодёжи. ${testChip()}`, `<button class="btn ghost" data-act="rt-export">${icon('download', 16)}Excel</button><a class="btn ghost" href="#methodology">${icon('scale', 16)}Методика</a>`, 'Рейтинг')}
     <div class="filters">${seg('rt.period', PERIODS.map((p) => [p.id, p.label]), f.period)}
       ${sel('rt-region', regionOptions('Все регионы'), f.region, 'data-live="rt.region"')}
       ${sel('rt-cat', catOptions('Все категории деятельности'), f.cat, 'data-live="rt.cat"')}
-      ${sel('rt-level', [['all', 'Каждый совет отдельно'], ['groups', 'ДЗО вместе с филиалами']], f.level, 'data-live="rt.level" aria-label="Уровень рейтинга"')}</div>
+      ${sel('rt-level', [['all', 'Каждый совет отдельно'], ['groups', BRAND.groupLevel]], f.level, 'data-live="rt.level" aria-label="Уровень рейтинга"')}</div>
     ${top3.length ? `<div class="podium">${pod(top3[1], 'p2')}${pod(top3[0], 'p1')}${pod(top3[2], 'p3')}</div>` : ''}
     ${card('', `<div class="tbl-wrap"><table class="tbl rating"><thead><tr><th class="num">Место</th><th>Изм.</th><th>Молодёжный совет</th><th class="num">Баллы</th><th class="num">Подтв. активностей</th><th class="num">Охват</th><th class="num">Проектов</th><th>Динамика места</th><th></th></tr></thead><tbody>
       ${shown.map((r) => { const o = O(r.orgId); const h = rankHistory(r.orgId, f.level); return `<tr class="${f.open === r.orgId ? 'open' : ''} ${r.rank <= 3 && r.total > 0 ? 'top' : ''}"><td class="num"><b class="rk">${r.rank}</b></td><td>${f.period === 'all' && !prev.size ? '' : delta(prev.get(r.orgId), r.rank)}</td><td><a class="tcell" href="#company-${o.id}">${orgLogo(o, 30)}<span><b>${esc(o.name)}</b><small>${esc(orgTypeLabel(o))} · ${fmt(r.size)} молодых</small></span></a></td><td class="num"><span class="sc">${bar(r.total)}<b>${fmt1(r.total)}</b></span></td><td class="num">${r.activities}</td><td class="num" title="Доля охваченных молодых сотрудников">${pct(r.engagement)}</td><td class="num">${r.projects}</td><td>${sparkline(h.map((x) => x.rank))}</td><td><button class="icon-btn" data-act="rt-open" data-id="${r.orgId}" aria-expanded="${f.open === r.orgId}" aria-label="Разбивка баллов">${icon('chevD', 16)}</button></td></tr>
@@ -42,7 +42,7 @@ route('leaders', () => {
   const prev = prevRanks(personScores, opt, f.period);
   const pod = (r, cls) => { if (!r) return ''; const u = U(r.userId); return `<a class="pod ${cls}" href="#person-${u.id}"><span class="pod-n">${r.rank}</span>${avatar(u, 56)}<b>${esc(u.name)}</b><span class="pod-m">${esc(orgLabel(u.companyId))}</span><span class="pod-s">${fmt1(r.total)}<small> баллов</small></span></a>`; };
   return `<div class="page">
-    ${pageHead('ТОП-100 молодых лидеров группы «Самрук-Энерго»', `Индивидуальный рейтинг считает только личный вклад: долю участника в каждом подтверждённом проекте, руководство, инициативы и личные достижения. ${testChip()}`, `<button class="btn ghost" data-act="ld-export">${icon('download', 16)}Excel</button>`, 'Рейтинг')}
+    ${pageHead('ТОП-100 молодых лидеров ' + BRAND.groupOf, `Индивидуальный рейтинг считает только личный вклад: долю участника в каждом подтверждённом проекте, руководство, инициативы и личные достижения. ${testChip()}`, `<button class="btn ghost" data-act="ld-export">${icon('download', 16)}Excel</button>`, 'Рейтинг')}
     <div class="filters">${seg('ld.period', PERIODS.map((p) => [p.id, p.label]), f.period)}
       ${sel('ld-root', rootOptions('Все организации'), f.root, 'data-live="ld.root"')}
       ${sel('ld-region', regionOptions('Все регионы'), f.region, 'data-live="ld.region"')}</div>
@@ -359,7 +359,7 @@ function reportHTML(q) {
   const people = personScores(range).filter((r) => r.total > 0 && (A.sc.orgIds.has(U(r.userId).companyId)) && (!A.sc.region || U(r.userId).regionId === A.sc.region)).slice(0, 10);
   const rows = (arr) => arr.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('');
   return `<div class="report" id="report-node">
-    <div class="rp-h"><div>${brandMark(36)}</div><div><b>JASTAR HUB</b><span>Квартальный отчёт о деятельности Молодёжного совета группы компаний АО «Самрук-Энерго»</span></div></div>
+    <div class="rp-h"><div>${brandMark(36)}</div><div><b>JASTAR HUB</b><span>Квартальный отчёт о деятельности Молодёжных советов ${esc(BRAND.groupOf)}</span></div></div>
     <h2>${esc(q.label)} · ${esc(A.sc.label)}</h2>
     <p class="rp-warn">ТЕСТОВЫЕ ДАННЫЕ ДЕМО-ВЕРСИИ. Отчёт сформирован автоматически ${fmtDT(new Date().toISOString())}. Показатели не являются официальными.</p>
     <h3>Ключевые показатели</h3>

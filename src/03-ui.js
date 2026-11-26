@@ -75,7 +75,7 @@ function orgLogo(o, size = 40) {
   return `<span class="logo ${o.type === 'subsidiary' ? 'sub' : ''}" style="--s:${size}px;--h:${h};font-size:${(size * k).toFixed(1)}px" title="${esc(o.full)}">${esc(ab)}</span>`;
 }
 const chip = (txt, tone = '', ic = '') => `<span class="chip ${tone ? 'tone-' + tone : ''}">${ic ? icon(ic, 13) : ''}${esc(txt)}</span>`;
-const statusChip = (s) => { const x = STATUS[s] || { label: s, tone: '' }; return `<span class="chip st tone-${x.tone}"><i class="dot"></i>${esc(x.label)}</span>`; };
+const statusChip = (s, ent) => { let x = STATUS[s] || { label: s, tone: '' }; if (ent && s === 'planned' && ent.start && ent.end) x = ent.start <= todayISO() ? { label: 'В работе', tone: 'accent' } : { label: 'Запланирован', tone: 'info' }; return `<span class="chip st tone-${x.tone}"><i class="dot"></i>${esc(x.label)}</span>`; };
 const catChip = (c) => { const x = CAT(c); return `<span class="chip cat" style="--c:${x.color}">${icon(x.icon, 13)}${esc(x.short)}</span>`; };
 const testChip = () => `<span class="chip tone-test" title="Тестовая запись демо-версии">ТЕСТ</span>`;
 const userLink = (u) => (u ? `<a href="#person-${u.id}" class="ulink">${esc(u.name)}</a>` : '—');
@@ -342,7 +342,7 @@ function brandMark(s = 34) {
 function renderSide() {
   const active = NAV_OF[CURRENT.name] || CURRENT.name;
   const pending = me() && myRole() === 'expert' ? [...DB.projects, ...DB.events, ...DB.achievements].filter((x) => x.review && x.review.expertId === me().id && ['submitted', 'in_review', 'needs_info'].includes(x.status) && x.status !== 'needs_info').length : 0;
-  $('#side').innerHTML = `<a class="brand" href="#home">${brandMark()}<span><b>JASTAR HUB</b><small>Молодёжный совет группы «Самрук-Энерго»</small></span></a>
+  $('#side').innerHTML = `<a class="brand" href="#home">${brandMark()}<span><b>JASTAR HUB</b><small>${esc(BRAND.sidebar)}</small></span></a>
     <nav aria-label="Основная навигация">${NAV.map((grp) => {
       const items = grp.items.filter(([, , show]) => !show || show());
       if (!items.length) return '';

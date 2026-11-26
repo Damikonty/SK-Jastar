@@ -5,6 +5,26 @@
    ===================================================================== */
 
 const SCHEMA_VERSION = 5;
+/* Вариант сборки: по умолчанию — группа «Самрук-Энерго». Показательная версия для всей группы
+   «Самрук-Қазына» подключает window.JASTAR_VARIANT (src/variant-sk.js) до этого файла. */
+const VARIANT = (typeof window !== 'undefined' && window.JASTAR_VARIANT) || null;
+const BRAND = Object.assign({
+  id: 'se',
+  storeKey: 'jastar-hub',
+  groupOf: 'группы «Самрук-Энерго»',
+  holding: 'АО «Самрук-Энерго»',
+  sidebar: 'Молодёжный совет группы «Самрук-Энерго»',
+  heroEyebrow: 'Единая цифровая платформа Молодёжного совета группы компаний АО «Самрук-Энерго»',
+  companiesLead: 'Корпоративный центр, дочерние и зависимые организации группы АО «Самрук-Энерго» и их Молодёжные советы.',
+  types: { fund: 'Корпоративный центр', portfolio: 'ДЗО', subsidiary: 'Филиал' },
+  typesPlural: { portfolio: 'ДЗО', subsidiary: 'Филиалы' },
+  kpiPortfolio: 'Дочерних организаций',
+  groupLevel: 'ДЗО вместе с филиалами',
+  ageCheck: 'Мне 35 лет или меньше, я работаю в корпоративном центре или дочерней организации АО «Самрук-Энерго»',
+  contactsExample: 'Например: Молодёжный совет АО «Самрук-Энерго»',
+  site: 'samruk-energy.kz',
+  parentGroup: 'АО «Самрук-Қазына»'
+}, (VARIANT && VARIANT.brand) || {});
 /* Подпись оргструктуры: если состав организаций изменится, сохранённые в браузере демо-данные пересоздаются */
 const SEED_SIG = () => ORGS_SEED.map((o) => o.id + ':' + o.type + ':' + (o.parentId || '')).join('|');
 
@@ -50,7 +70,7 @@ const KZ_OUTLINE = [
 /* Организационная структура группы компаний АО «Самрук-Энерго».
    type: fund — корпоративный центр, portfolio — дочерняя/зависимая организация (ДЗО), subsidiary — филиал ДЗО.
    Численность молодёжи до 35 лет (young) — ОРИЕНТИРОВОЧНАЯ, администратор уточняет её в админ-панели. */
-const ORGS_SEED = [
+const ORGS_SEED = (VARIANT && VARIANT.orgs) || [
   { id: 'se', type: 'fund', parentId: null, name: 'Самрук-Энерго', full: 'АО «Самрук-Энерго»', regionId: 'ast', sector: 'Управление группой компаний', young: 160 },
   { id: 'qgp', type: 'portfolio', parentId: 'se', name: 'Qazaq Green Power', full: 'Qazaq Green Power PLC', regionId: 'ast', sector: 'Возобновляемая энергетика', young: 25 },
   { id: 'pves', type: 'portfolio', parentId: 'se', name: 'ПВЭС', full: 'ТОО «ПВЭС»', regionId: 'akm', sector: 'Ветровая генерация', young: 15 },
@@ -74,7 +94,7 @@ const ORGS_SEED = [
 ];
 
 /* Организации, сотрудники которых работают в разных регионах (сейчас таких нет: все работают по месту организации) */
-const NETWORK_ORGS = [];
+const NETWORK_ORGS = (VARIANT && VARIANT.network) || [];
 
 /* Профили организаций для разделов «Активы группы» и «Оргструктура».
    Факты — по открытым данным сайта samruk-energy.kz и публикациям СМИ (ссылка — в src).
@@ -83,7 +103,7 @@ const NETWORK_ORGS = [];
    holding: 'qgp' — актив в периметре Qazaq Green Power PLC.
    Численность персонала (staff) не публикуется: её вносит председатель совета или администратор. */
 const SE_SRC = 'https://samruk-energy.kz/en/company/group-of-companies/';
-const ORG_PROFILE = {
+const ORG_PROFILE = (VARIANT && VARIANT.profiles) || {
   se: { kind: 'center', what: 'Корпоративный центр группы: управляет дочерними организациями, определяет стратегию развития, инвестиционные и финансовые решения группы. Входит в группу АО «Самрук-Қазына».', city: 'г. Астана', address: 'г. Астана, пр. Кабанбай батыра, 15А, блок Б', site: 'samruk-energy.kz', src: SE_SRC.replace('/en/', '/ru/') },
   qgp: { kind: 'holding', what: 'Компания группы по гидро- и возобновляемой энергетике: модернизация действующих и строительство новых генерирующих мощностей, новые энергетические технологии. Создана 4 ноября 2022 года.', city: 'г. Астана', share: '100% — АО «Самрук-Энерго»', since: '2022', objects: ['Мойнакская ГЭС', 'Шардаринская ГЭС', 'Усть-Каменогорская ГЭС', 'Шульбинская ГЭС', 'Бухтарминская ГЭС', 'Samruk-Green Energy', 'ПВЭС'], src: SE_SRC + 'qgp-plc' },
   pves: { kind: 'res', holding: 'qgp', what: 'Первая ветровая электрическая станция: производит электроэнергию на 22 ветроустановках мощностью 2,05 МВт каждая. Введена в эксплуатацию в 2015 году.', city: 'Район г. Ерейментау, Акмолинская область', mw: 45, objects: ['ВЭС 45 МВт, 22 ветроустановки'], since: '2015', site: 'pves.kz', src: SE_SRC + 'pves' },
@@ -107,7 +127,7 @@ const ORG_PROFILE = {
 };
 
 /* Ключевые контакты по умолчанию (администратор меняет их на странице «Контакты») */
-const CONTACT_PEOPLE_DEFAULT = [
+const CONTACT_PEOPLE_DEFAULT = (VARIANT && VARIANT.people) || [
   { id: 'author', role: 'Руководитель проекта JASTAR HUB', name: 'Сабанов Дамир Бисембаевич', position: 'Член Молодёжного совета АО «Самрук-Энерго»', org: 'АО «Самрук-Энерго», г. Астана', topics: 'Развитие платформы, идеи и предложения, сотрудничество с советами ДЗО', email: '', phone: '', telegram: '' },
   { id: 'sysadmin', role: 'Администратор системы', name: '', position: '', org: '', topics: 'Доступ и роли, учётные записи, восстановление входа, ошибки на сайте', email: '', phone: '', telegram: '' }
 ];
@@ -115,14 +135,14 @@ const QSAMRUK_URL = 'https://www.qsamruk.kz/';
 /* Тестовые вакансии демо-версии (в рабочей версии их добавляют администратор и председатели) */
 function demoVacancies(base = new Date()) {
   const d = (n) => { const x = new Date(base); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
-  return [
+  return ((VARIANT && VARIANT.vacancies) || [
     ['ales', 'Инженер-теплотехник', 'Алматы', 'job', 21, 'Обслуживание основного оборудования ТЭЦ, участие в ремонтной кампании. Опыт работы от 1 года.'],
     ['se', 'Стажёр в департамент цифровизации', 'Астана', 'intern', 14, 'Оплачиваемая стажировка на 3 месяца для студентов последних курсов и выпускников.'],
     ['egres', 'Машинист энергоблока', 'Экибастуз', 'job', 30, 'Эксплуатация энергоблока 500 МВт. Профильное образование, готовность к сменному графику.'],
     ['qgp', 'Ведущий специалист по проектам ВИЭ', 'Астана', 'job', null, 'Сопровождение проектов ветровых и солнечных станций: от технико-экономического обоснования до ввода.'],
     ['azhk', 'Электромонтёр по ремонту воздушных линий', 'Алматы', 'job', 10, 'Ремонт и обслуживание воздушных линий 0,4–10 кВ. Группа по электробезопасности не ниже III.'],
     ['shges', 'Программа «Молодой специалист»', 'Шардара', 'program', 40, 'Годовая программа адаптации для выпускников энергетических специальностей с наставником.']
-  ].map(([orgId, title, city, kind, dl, description], i) => ({ id: 'vac' + (i + 1), orgId, title, city, kind, deadline: dl == null ? null : d(dl), url: QSAMRUK_URL, description, status: 'open', createdBy: null, createdAt: d(-i - 1) + 'T09:00:00.000Z', demo: true }));
+  ]).map(([orgId, title, city, kind, dl, description], i) => ({ id: 'vac' + (i + 1), orgId, title, city, kind, deadline: dl == null ? null : d(dl), url: QSAMRUK_URL, description, status: 'open', createdBy: null, createdAt: d(-i - 1) + 'T09:00:00.000Z', demo: true }));
 }
 
 const CATS = [
@@ -306,7 +326,7 @@ function seedDB() {
     demo: true
   }));
   /* Склонность к активности: небольшие советы специально сделаны очень активными, чтобы показать нормирование */
-  const activity = { se: 1.2, qgp: 1.4, pves: 1.3, ewp: 1.2, sge: 1.25, shges: 1.0, mges: 1.3, ukges: 1.05, bges: 0.95, shulges: 1.1, azhk: 0.9, azhkes: 0.75, ales: 1.05, egres: 1.1, egres2: 0.9, esc: 1.15, escoco: 0.85, semey: 0.8, oskemen: 0.85, ktec: 1.0 };
+  const activity = Object.assign({ se: 1.2, qgp: 1.4, pves: 1.3, ewp: 1.2, sge: 1.25, shges: 1.0, mges: 1.3, ukges: 1.05, bges: 0.95, shulges: 1.1, azhk: 0.9, azhkes: 0.75, ales: 1.05, egres: 1.1, egres2: 0.9, esc: 1.15, escoco: 0.85, semey: 0.8, oskemen: 0.85, ktec: 1.0 }, (VARIANT && VARIANT.activity) || {});
   const quality = {}; orgs.forEach((o) => { quality[o.id] = 6.2 + R() * 2.6; });
 
   /* --- пользователи --- */
@@ -364,22 +384,23 @@ function seedDB() {
     }
   });
   /* Карагандинский региональный председатель КТЖ — для демо-входа */
-  const regOrg = orgs.find((o) => o.id === 'egres');
-  const regDemo = users.find((u) => u.companyId === 'egres' && u.role === 'regional');
-  if (regDemo) { regDemo.regionId = 'pav'; regDemo.city = 'Экибастуз'; }
-  regOrg.council.regionalReps = users.filter((u) => u.companyId === 'egres' && u.role === 'regional').map((u) => u.id);
+  const regOrgId = (VARIANT && VARIANT.regionalDemoOrg) || 'egres';
+  const regOrg = orgs.find((o) => o.id === regOrgId) || orgs[1];
+  const regDemo = users.find((u) => u.companyId === regOrg.id && u.role === 'regional');
+  if (regDemo && !VARIANT) { regDemo.regionId = 'pav'; regDemo.city = 'Экибастуз'; }
+  regOrg.council.regionalReps = users.filter((u) => u.companyId === regOrg.id && u.role === 'regional').map((u) => u.id);
   /* несколько участников ожидают подтверждения членства */
   users.filter((u) => u.role === 'member').slice(5, 200).forEach((u, i) => { if (i % 23 === 0) u.verified = false; });
 
   /* --- эксперты --- */
-  const experts = [
+  const experts = ((VARIANT && VARIANT.experts) || [
     { org: null, title: 'Внешний эксперт, проектный менеджмент', conflicts: [] },
     { org: null, title: 'Внешний эксперт, социальные проекты и НКО', conflicts: [] },
     { org: 'ales', title: 'Эксперт группы, АлЭС', conflicts: ['ales'] },
     { org: 'egres2', title: 'Эксперт группы, Экибастузская ГРЭС-2', conflicts: ['egres2'] },
     { org: null, title: 'Внешний эксперт, HR и развитие персонала', conflicts: ['sge'] },
     { org: 'esc', title: 'Эксперт группы, Energy Solution Center', conflicts: ['esc'] }
-  ].map((x) => {
+  ]).map((x) => {
     const host = x.org ? orgs.find((o) => o.id === x.org) : orgs[0];
     return makeUser(host, { role: 'expert', councilRole: 'Участник', position: x.title, companyId: x.org, conflicts: x.conflicts, regionId: 'ast', city: 'Астана', dept: x.org ? 'Экспертный пул группы' : 'Независимый эксперт', bio: 'Независимый эксперт платформы JASTAR HUB. Профиль тестовый.' });
   });
@@ -393,11 +414,11 @@ function seedDB() {
   const statusBag = [...Array(70).fill('confirmed'), ...Array(8).fill('in_review'), ...Array(7).fill('submitted'), ...Array(5).fill('needs_info'), ...Array(5).fill('rejected'), ...Array(5).fill('draft')];
   const orgUsers = (oid) => users.filter((u) => u.companyId === oid && ['member', 'chair', 'regional'].includes(u.role));
   orgs.forEach((o) => {
-    const count = Math.max(2, Math.round(activity[o.id] * (1 + Math.sqrt(o.young) / 7)));
+    const count = Math.max(2, Math.round((activity[o.id] || 1) * (1 + Math.sqrt(o.young) / 7)));
     const titlesUsed = new Set();
     const team0 = orgUsers(o.id);
     for (let i = 0; i < count; i++) {
-      const cat = i === 0 && o.id === 'se' ? 'inter' : pick(catBag);
+      const cat = i === 0 && o.type === 'fund' ? 'inter' : pick(catBag);
       const tpl = PROJECT_TPL[cat];
       let title = pick(tpl.titles);
       if (titlesUsed.has(title)) title += ` — ${pick(['весна', 'осень', 'II поток', 'сезон 2', 'региональный этап'])}`;
@@ -472,7 +493,7 @@ function seedDB() {
   const events = [];
   let eN = 1;
   orgs.forEach((o) => {
-    const n = Math.max(1, Math.round(activity[o.id] * (1 + Math.sqrt(o.young) / 14)));
+    const n = Math.max(1, Math.round((activity[o.id] || 1) * (1 + Math.sqrt(o.young) / 14)));
     const people = orgUsers(o.id);
     for (let i = 0; i < n + 1; i++) {
       const upcoming = i === n || chance(0.22);
@@ -508,6 +529,86 @@ function seedDB() {
     }
   });
 
+  /* --- показательная версия: текущие проекты и план на следующий год (только в варианте с showcase) --- */
+  if (VARIANT && VARIANT.showcase) {
+    const SC = VARIANT.showcase;
+    const year = SC.year;
+    const dateIn = (m, d) => { const x = new Date(year, m, d, 12); return x.toISOString().slice(0, 10); };
+    const addDays = (iso, n) => { const x = new Date(iso + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
+    const mkTeam = (o) => {
+      const members = shuffle(orgUsers(o.id));
+      if (!members.length) return null;
+      const team = [{ userId: members[0].id, role: 'Руководитель проекта', share: 40 }];
+      const rest = members.slice(1, rint(3, 5));
+      rest.forEach((u, k) => team.push({ userId: u.id, role: pick(['Координатор', 'Участник команды', 'Ответственный за коммуникации', 'Аналитик']), share: 0 }));
+      let left = 60; rest.forEach((t, k) => { const sh = k === rest.length - 1 ? left : Math.round(60 / rest.length); team[k + 1].share = sh; left -= sh; });
+      if (!rest.length) team[0].share = 100;
+      return team;
+    };
+    const planProject = (o, cat, title, start, end, opts = {}) => {
+      const team = mkTeam(o); if (!team) return;
+      const tpl = PROJECT_TPL[cat];
+      const partnerOrgIds = opts.partners || [];
+      partnerOrgIds.forEach((pid) => { const cand = orgUsers(pid); if (cand.length) team.push({ userId: pick(cand).id, role: 'Партнёр от ' + orgName0(pid), share: 0 }); });
+      const participants = opts.participants || rint(20, 120);
+      projects.push({
+        id: 'p' + pN++, title, orgId: o.id, companyId: o.type === 'subsidiary' ? o.parentId : o.id,
+        regionId: opts.regionId || o.regionId, leaderId: team[0].userId, initiatorId: team[0].userId, team, start, end, category: cat,
+        desc: opts.desc || `${title} — ${opts.current ? 'текущий' : 'запланированный'} проект Молодёжного совета ${o.name}. ${tpl.goal} Описание тестовое.`,
+        goal: tpl.goal + ' Задачи: подготовить программу, привлечь участников, зафиксировать результаты и подготовить отчёт.',
+        problem: tpl.problem, participants, reach: Math.round(participants * (1.3 + R())), volunteerHours: ['social', 'charity', 'eco'].includes(cat) ? participants * 3 : 0,
+        results: '', kpis: tpl.kpis.slice(0, 3).map(([name, unit, a, b]) => { const plan = rint(a, b); return { name, unit, plan, fact: opts.current ? Math.round(plan * (0.2 + R() * 0.5)) : 0 }; }),
+        effectType: cat === 'innov' ? 'economic' : 'social', effect: tpl.effect, media: [],
+        partners: partnerOrgIds.length ? 'Молодёжные советы компаний-партнёров группы' : '', partnerOrgIds,
+        status: 'planned', plan: true, review: null, history: [{ ts: tsISO(-rint(5, 40)), actorId: team[0].userId, action: opts.current ? 'Проект запущен' : 'Проект включён в план' }],
+        comments: [], createdBy: team[0].userId, createdAt: tsISO(-rint(5, 40)), demo: true
+      });
+    };
+    const orgName0 = (id) => (orgs.find((o) => o.id === id) || {}).name || id;
+    /* флагманские проекты группы на год */
+    (SC.flagshipProjects || []).forEach(([orgId, cat, title, m, d, dur, partners, desc]) => {
+      const o = orgs.find((x) => x.id === orgId); if (!o) return;
+      const start = dateIn(m, d);
+      planProject(o, cat, title, start, addDays(start, dur), { partners, desc, participants: rint(80, 400) });
+    });
+    /* текущие проекты: начались недавно, завершатся в ближайшие месяцы */
+    orgs.filter((o) => o.type !== 'fund').forEach((o, i) => {
+      if (i % 2 && o.type === 'subsidiary') return;
+      const cat = pick(catBag);
+      const start = dayISO(-rint(15, 75));
+      planProject(o, cat, pick(PROJECT_TPL[cat].titles), start, dayISO(rint(20, 140)), { current: true });
+    });
+    /* план проектов советов на год */
+    orgs.forEach((o, i) => {
+      if (o.type === 'subsidiary' && i % 3) return;
+      const cat = pick(catBag);
+      const start = dateIn(rint(0, 10), rint(1, 25));
+      planProject(o, cat, pick(PROJECT_TPL[cat].titles) + ' ' + year, start, addDays(start, rint(30, 120)));
+    });
+    /* мероприятия на год: флагманские и по 3–5 в месяц от разных советов */
+    const planEvent = (o, cat, title, date, opts = {}) => {
+      const people = orgUsers(o.id);
+      const organizers = shuffle(people).slice(0, rint(1, 2)).map((u) => u.id);
+      if (!organizers.length) return;
+      const cap = opts.capacity || rint(30, 150);
+      events.push({
+        id: 'e' + eN++, title, orgId: o.id, regionId: opts.regionId || o.regionId, date, time: opts.time || pick(['10:00', '11:00', '15:00', '16:30']),
+        place: opts.place || pick(PLACES), category: cat, desc: opts.desc || `Мероприятие Молодёжного совета ${o.name} в плане на ${year} год. Описание тестовое.`,
+        organizers, capacity: cap, registered: shuffle(users.filter((u) => ['member', 'chair', 'regional'].includes(u.role))).slice(0, rint(3, Math.min(25, cap))).map((u) => u.id),
+        attended: 0, summary: '', media: [], status: 'planned', review: null, history: [{ ts: tsISO(-rint(3, 30)), actorId: organizers[0], action: 'Мероприятие опубликовано' }], createdBy: organizers[0], demo: true
+      });
+    };
+    (SC.flagshipEvents || []).forEach(([orgId, cat, title, m, d, place, cap, desc]) => {
+      const o = orgs.find((x) => x.id === orgId); if (o) planEvent(o, cat, title, dateIn(m, d), { place, capacity: cap, desc });
+    });
+    /* ближайшие мероприятия: оживлённый текущий и следующий месяц */
+    for (let k = 0; k < 14; k++) { const o = pick(orgs); const cat = pick(catBag); planEvent(o, cat, pick(EVENT_TPL[cat]), dayISO(rint(1, 40))); }
+    for (let m = 0; m < 12; m++) {
+      const n = rint(3, 5);
+      shuffle(orgs).slice(0, n).forEach((o) => { const cat = pick(catBag); planEvent(o, cat, pick(EVENT_TPL[cat]), dateIn(m, rint(3, 27))); });
+    }
+  }
+
   /* --- личные достижения --- */
   const achievements = [];
   let aN = 1;
@@ -541,7 +642,7 @@ function seedDB() {
   /* --- новости --- */
   const orgName = (id) => orgs.find((o) => o.id === id).name;
   const chairOf = (id) => orgs.find((o) => o.id === id).council.chairId;
-  const newsSeed = [
+  const newsSeed = (VARIANT && VARIANT.news) || [
     ['announce', 'se', 'Стартовал приём заявок на кейс-чемпионат молодёжи группы', 'Команды из разных организаций группы решат реальные задачи компаний «Самрук-Энерго».', -3],
     ['interview', 'ales', 'Председатель Молодёжного совета АлЭС о том, как измерять эффект проектов', 'Почему охват без результата ничего не говорит и как совет перешёл на KPI.', -6],
     ['photo', 'egres', 'Фотоотчёт: молодёжь Экибастузской ГРЭС-1 высадила аллею в Экибастузе', 'Акция прошла в рамках экологического направления совета.', -9],
@@ -566,7 +667,7 @@ function seedDB() {
   }));
 
   /* --- база знаний --- */
-  const kbSeed = [
+  const kbSeed = (VARIANT && VARIANT.kb) || [
     ['template', 'Шаблон паспорта проекта Молодёжного совета', 'Структура: проблема, цель, задачи, команда, KPI, бюджет, риски.', 'se'],
     ['template', 'Шаблон отчёта о реализации проекта', 'Фактические результаты, KPI план/факт, охват, доказательства.', 'se'],
     ['howto', 'Как организовать мероприятие: чек-лист на 4 недели', 'Пошаговый план от идеи до отчёта и фотоотчёта.', 'se'],
@@ -589,7 +690,7 @@ function seedDB() {
 
   /* --- обратная связь и благодарности (тестовые) --- */
   const fbPool = users.filter((u) => ['member', 'chair', 'regional'].includes(u.role));
-  const memberDemo = users.find((u) => u.companyId === 'azhk' && u.role === 'member');
+  const memberDemo = users.find((u) => u.companyId === ((VARIANT && VARIANT.memberDemoOrg) || 'azhk') && u.role === 'member');
   const thanksTexts = [
     'Спасибо за помощь с подготовкой отчёта по проекту — без вас мы бы не уложились в срок.',
     'Благодарю за наставничество в первые месяцы работы: в процессах стало намного проще разобраться.',
@@ -606,7 +707,7 @@ function seedDB() {
     let to = pick(fbPool); if (to.id === from.id) to = fbPool[(fbPool.indexOf(to) + 1) % fbPool.length];
     fbAdd({ userId: from.id, kind: 'thanks', body: text, targetType: 'user', targetId: i === 1 ? memberDemo.id : to.id, isPublic: true, status: 'published', createdAt: tsISO(-rint(1, 40)) });
   });
-  fbAdd({ userId: pick(fbPool).id, kind: 'thanks', body: 'Спасибо Молодёжному совету АлЭС за открытый обмен практиками по наставничеству.', targetType: 'org', targetId: 'ales', isPublic: true, status: 'published', createdAt: tsISO(-12) });
+  fbAdd({ userId: pick(fbPool).id, kind: 'thanks', body: (VARIANT && VARIANT.thanksOrgText) || 'Спасибо Молодёжному совету АлЭС за открытый обмен практиками по наставничеству.', targetType: 'org', targetId: (VARIANT && VARIANT.thanksOrg) || 'ales', isPublic: true, status: 'published', createdAt: tsISO(-12) });
   fbAdd({ userId: pick(fbPool).id, kind: 'thanks', body: 'Спасибо команде платформы: подавать проекты на проверку стало намного проще.', targetType: 'platform', isPublic: true, status: 'published', createdAt: tsISO(-5) });
   fbAdd({ userId: pick(fbPool).id, kind: 'suggestion', subject: 'Шаблон отчёта для мероприятий', body: 'Предлагаю добавить в базу знаний готовый шаблон отчёта по мероприятию с листом регистрации — сейчас каждый совет делает свой.', section: 'Мероприятия', status: 'done', reply: 'Спасибо! Шаблон добавлен в базу знаний.', repliedBy: admin.id, repliedAt: tsISO(-3), createdAt: tsISO(-9) });
   fbAdd({ userId: pick(fbPool).id, kind: 'recommendation', subject: 'Напоминания о сроках проверки', body: 'Рекомендую присылать председателю напоминание, если заявка совета ждёт проверки дольше недели.', section: 'Экспертиза', status: 'in_work', createdAt: tsISO(-4) });
@@ -629,7 +730,7 @@ function seedDB() {
     session: { userId: null },
     demoAccounts: {
       admin: admin.id,
-      chair: orgs.find((o) => o.id === 'ales').council.chairId,
+      chair: orgs.find((o) => o.id === ((VARIANT && VARIANT.chairDemoOrg) || 'ales')).council.chairId,
       regional: regDemo ? regDemo.id : null,
       member: memberDemo.id,
       expert: experts[0].id,

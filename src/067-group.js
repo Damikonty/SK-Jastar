@@ -32,11 +32,12 @@ const ORG_KINDS = {
   service: { name: 'Сервис', icon: 'settings' },
   project: { name: 'Строительство ТЭЦ', icon: 'crane' }
 };
+if (VARIANT && VARIANT.kinds) Object.assign(ORG_KINDS, VARIANT.kinds);
 const KIND_TONE = { thermal: 's2', hydro: 's3', res: 's1' };
 const VAC_KINDS = { job: 'Вакансия', intern: 'Стажировка', program: 'Программа развития' };
 const nfCap = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 });
 const prof = (o) => (o && o.profile) || {};
-const kindOf = (o) => prof(o).kind || (o && o.type === 'fund' ? 'center' : 'service');
+const kindOf = (o) => prof(o).kind || (o && o.type === 'fund' ? (BRAND.id === 'sk' ? 'fund' : 'center') : 'service');
 const capLabel = (p) => p.capText || [p.mw != null ? nfCap.format(p.mw) + ' МВт' : '', p.gcal != null ? nfCap.format(p.gcal) + ' Гкал/ч' : ''].filter(Boolean).join(' · ');
 const siteUrl = (s) => 'https://' + String(s || '').replace(/^https?:\/\//i, '').replace(/\/+$/, '');
 const extLink = (href, label, cls = 'lnk') => `<a class="${cls}" href="${esc(href)}" target="_blank" rel="noopener">${esc(label)}${icon('ext', 13)}</a>`;
@@ -125,7 +126,7 @@ function acard(o) {
   const p = prof(o); const k = ORG_KINDS[kindOf(o)] || ORG_KINDS.service;
   return `<article class="acard ${o.type === 'subsidiary' ? 'branch' : ''}" id="asset-${o.id}">
     <header class="ac-h">${orgLogo(o, 40)}<span><a href="#company-${o.id}"><b>${esc(o.name)}</b></a><small>${esc(o.full)}</small></span></header>
-    <div class="chips">${chip(k.name, '', k.icon)}${o.type === 'subsidiary' ? chip('Филиал ' + orgLabel(o.parentId)) : ''}${p.holding === 'qgp' ? chip('Периметр QGP', 'accent') : ''}${p.check ? chip('Описание уточняется', 'warn', 'info') : ''}</div>
+    <div class="chips">${chip(k.name, '', k.icon)}${o.type === 'subsidiary' ? chip(BRAND.types.subsidiary + ' · ' + orgLabel(o.parentId)) : ''}${p.holding === 'qgp' ? chip('Периметр QGP', 'accent') : ''}${p.check ? chip('Описание уточняется', 'warn', 'info') : ''}</div>
     <p class="ac-what">${esc(p.what || o.sector || '')}</p>
     ${assetFacts(o)}
     ${assetObjects(p)}
@@ -167,19 +168,24 @@ route('assets', () => {
   const totalMW = sum(withMW, (o) => prof(o).mw);
   const projects = orgs.filter((o) => kindOf(o) === 'project');
   const regions = uniq(orgs.map((o) => o.regionId)).length;
-  const groups = [['', 'Все'], ['thermal', 'Тепловая генерация'], ['hydro', 'ГЭС'], ['res', 'Ветер и солнце'], ['grid', 'Сети и сбыт'], ['project', 'Новые ТЭЦ'], ['mgmt', 'Управление и сервис']];
+  const SKV = BRAND.id === 'sk';
+  const groups = SKV ? [['', 'Все'], ...Object.entries(VARIANT.kinds).filter(([k]) => k !== 'fund' && orgs.some((o) => kindOf(o) === k)).map(([k, v]) => [k, v.name])]
+    : [['', 'Все'], ['thermal', 'Тепловая генерация'], ['hydro', 'ГЭС'], ['res', 'Ветер и солнце'], ['grid', 'Сети и сбыт'], ['project', 'Новые ТЭЦ'], ['mgmt', 'Управление и сервис']];
+  const youngSum = sum(orgs, (o) => o.young || 0);
   const q = norm(F.q);
   const list = orgs.filter((o) => {
     const k = kindOf(o);
     if (F.k === 'mgmt' ? !['center', 'holding', 'service'].includes(k) : F.k && k !== F.k) return false;
     return !q || norm([o.name, o.full, prof(o).what, prof(o).city, (prof(o).objects || []).join(' ')].join(' ')).includes(q);
   });
-  return `<div class="page">${pageHead(t('assets'), 'Какие компании входят в группу АО «Самрук-Энерго», чем они занимаются, где работают и сколько в них людей.', '<a class="btn" href="#structure">' + icon('tree', 16) + 'Оргструктура</a>')}
-    <div class="kpis k4">${kpi('Организаций в группе', fmt(orgs.length), `корпоративный центр, ${dzo} ДЗО и ${subs} ${plural(subs, 'филиал', 'филиала', 'филиалов')}`, 'building')}${kpi('Установленная мощность', `${fmt(totalMW)} <small>МВт</small>`, `электрическая, по ${withMW.length} ${plural(withMW.length, 'компании', 'компаниям', 'компаниям')}`, 'bolt')}${kpi('Регионов присутствия', fmt(regions), 'по месту организаций', 'pin')}${kpi('Новые ТЭЦ', fmt(projects.length), 'строятся, ввод — 2029 год', 'crane')}</div>
+  const kpisSK = `<div class="kpis k4">${kpi('Организаций в группе', fmt(orgs.length), `фонд, ${dzo} портфельных компаний и ${subs} ДЗО`, 'building')}${kpi('Портфельных компаний', fmt(dzo), 'с собственными Молодёжными советами', 'flag')}${kpi('Регионов присутствия', fmt(regions), 'по месту организаций', 'pin')}${kpi('Молодёжи до 35 лет', fmt(youngSum), 'тестовая численность', 'users')}</div>`;
+  const readSK = card('Как читать раздел', `<ul class="ticks"><li><b>Чем занимается</b> — краткое обзорное описание компании.</li><li><b>Персонал</b> — общая численность работников, её вносит председатель совета или администратор.</li><li><b>Молодёжь до 35 лет</b> — база для нормирования рейтинга советов. В показательной версии цифры тестовые.</li><li><b>Портфельная компания вместе с ДЗО</b> — так считается групповой рейтинг.</li></ul>`);
+  return `<div class="page">${pageHead(t('assets'), `Какие компании входят в группу ${BRAND.holding}, чем они занимаются, где работают и сколько в них людей.`, '<a class="btn" href="#structure">' + icon('tree', 16) + 'Оргструктура</a>')}
+    ${SKV ? kpisSK + readSK : `<div class="kpis k4">${kpi('Организаций в группе', fmt(orgs.length), `корпоративный центр, ${dzo} ДЗО и ${subs} ${plural(subs, 'филиал', 'филиала', 'филиалов')}`, 'building')}${kpi('Установленная мощность', `${fmt(totalMW)} <small>МВт</small>`, `электрическая, по ${withMW.length} ${plural(withMW.length, 'компании', 'компаниям', 'компаниям')}`, 'bolt')}${kpi('Регионов присутствия', fmt(regions), 'по месту организаций', 'pin')}${kpi('Новые ТЭЦ', fmt(projects.length), 'строятся, ввод — 2029 год', 'crane')}</div>
     <div class="grid g-2-1">
       ${card('Установленная электрическая мощность, МВт', capacityBars(orgs))}
       ${card('Как читать раздел', `<ul class="ticks"><li><b>Чем занимается</b> — по открытым данным сайта samruk-energy.kz и СМИ; ссылка на источник — внизу карточки. Пометка «уточняется» — описание ждёт проверки.</li><li><b>Персонал</b> — общая численность работников. Её вносит председатель совета организации или администратор, пока она не указана — «уточняется».</li><li><b>Молодёжь до 35 лет</b> — база для нормирования рейтинга советов, её уточняет администратор.</li><li><b>Периметр QGP</b> — гидро- и ВИЭ-активы, переданные в Qazaq Green Power PLC.</li></ul>`)}
-    </div>
+    </div>`}
     <div class="filters">${seg('as.k', groups, F.k)}<div class="f-search">${icon('search', 16)}<input id="as-q" type="search" placeholder="Компания, город или объект" value="${esc(F.q)}" data-live="as.q" aria-label="Поиск по активам"></div></div>
     <p class="count">${list.length} ${plural(list.length, 'организация', 'организации', 'организаций')}</p>
     ${list.length ? `<div class="agrid">${list.map(acard).join('')}</div>` : emptyState('search', 'Ничего не нашли', 'Измените направление или запрос.')}
@@ -232,7 +238,7 @@ ACTIONS['asset-edit'] = (el) => {
 function ocNode(o, cls = '') {
   const p = prof(o); const k = ORG_KINDS[kindOf(o)] || ORG_KINDS.service;
   const kids = childrenOf(o.id);
-  return `<div class="oc-item"><a class="oc-node ${cls} ${o.type}" href="#company-${o.id}">${orgLogo(o, 30)}<span><b>${esc(o.name)}</b><small>${esc(o.type === 'subsidiary' ? 'Филиал' : capLabel(p) || k.name)}</small></span></a>${kids.length ? `<div class="oc-kids">${kids.map((x) => ocNode(x)).join('')}</div>` : ''}</div>`;
+  return `<div class="oc-item"><a class="oc-node ${cls} ${o.type}" href="#company-${o.id}">${orgLogo(o, 30)}<span><b>${esc(o.name)}</b><small>${esc(o.type === 'subsidiary' ? BRAND.types.subsidiary : capLabel(p) || k.name)}</small></span></a>${kids.length ? `<div class="oc-kids">${kids.map((x) => ocNode(x)).join('')}</div>` : ''}</div>`;
 }
 function orgChart() {
   const head = O(headId());
@@ -258,6 +264,11 @@ function orgChart() {
   if (other.length) cols.push(col('building', 'Другие организации', other.map((o) => ocNode(o)).join(''), other.length));
   return `<div class="orgchart"><div class="oc-root">${head ? ocNode(head, 'root') : ''}</div><div class="oc-cols n${cols.length}">${cols.join('')}</div></div>`;
 }
+function skChart() {
+  const head = O(headId());
+  const pcs = DB.orgs.filter((o) => o.type === 'portfolio');
+  return `<div class="orgchart"><div class="oc-root solo">${head ? ocNode(head, 'root') : ''}</div><div class="oc-grid">${pcs.map((o) => `<section class="oc-pc">${ocNode(o, 'hold')}</section>`).join('')}</div></div>`;
+}
 function councilStructure() {
   const head = O(headId());
   const hm = head ? councilMembers(head.id).filter((u) => u.verified) : [];
@@ -273,18 +284,21 @@ function councilStructure() {
       <div class="cs-row">${chair ? pcard(chair, 'Председатель совета') : vacant('Председатель совета')}${deputies.length ? deputies.map((u) => pcard(u, 'Заместитель председателя')).join('') : vacant('Заместитель председателя')}${secretary.length ? secretary.map((u) => pcard(u, 'Секретарь')).join('') : vacant('Секретарь')}</div></section>
     <section class="cs-lvl"><h3>Региональные председатели <small>${regionals.length}</small></h3>
       ${regionals.length ? `<div class="cs-row">${regionals.map((u) => pcard(u, 'Региональный председатель', (RG(u.regionId) || {}).name || '—')).join('')}</div>` : '<p class="muted">Пока не назначены. Роль назначает администратор в разделе «Администрирование → Пользователи».</p>'}</section>
-    <section class="cs-lvl"><h3>Молодёжные советы ДЗО и филиалов <small>${councils.length}</small></h3>
+    <section class="cs-lvl"><h3>${BRAND.id === 'sk' ? 'Молодёжные советы портфельных компаний и ДЗО' : 'Молодёжные советы ДЗО и филиалов'} <small>${councils.length}</small></h3>
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Совет</th><th>Председатель</th><th class="num">В совете</th></tr></thead><tbody>${councils.map((o) => { const ch = U(o.council.chairId); return `<tr class="${o.type === 'subsidiary' ? 'sub' : ''}"><td><a class="tcell" href="#company-${o.id}">${orgLogo(o, 28)}<span><b>${o.type === 'subsidiary' ? '↳ ' : ''}${esc(o.name)}</b><small>${esc(orgTypeLabel(o))}</small></span></a></td><td>${ch ? `<a class="tcell" href="#person-${ch.id}">${avatar(ch, 26)}<span><b>${esc(ch.name)}</b></span></a>` : '<span class="muted">Не назначен</span>'}</td><td class="num">${fmt(councilMembers(o.id).filter((u) => u.verified).length)}</td></tr>`; }).join('')}</tbody></table></div></section>
   </div>`;
 }
 route('structure', () => {
   const tab = UI.tabs.st || 'group';
   const body = tab === 'group'
-    ? `${card('', orgChart())}
+    ? BRAND.id === 'sk' ? `${card('', skChart())}
+      <div class="grid g2">${card('Как устроена группа', `<dl class="dl1"><div><dt>Фонд</dt><dd>АО «Самрук-Қазына» управляет портфелем национальных компаний.</dd></div><div><dt>Портфельная компания</dt><dd>Национальная компания группы. У каждой свой Молодёжный совет, который объединяет советы её ДЗО.</dd></div><div><dt>ДЗО</dt><dd>Дочерняя или зависимая организация портфельной компании. У ДЗО может быть свой совет, в групповом рейтинге он считается вместе с портфельной компанией.</dd></div></dl>`)}
+        ${card('Как это связано с платформой', `<ul class="ticks"><li>Сотрудник при регистрации выбирает свою портфельную компанию и ДЗО.</li><li>Председатель совета портфельной компании подтверждает участников своей компании и её ДЗО.</li><li>Региональный председатель работает со всеми организациями своего региона.</li><li>Рейтинг ведётся по каждому совету и по портфельным компаниям вместе с ДЗО, с нормированием по численности молодёжи.</li></ul>`)}</div>`
+    : `${card('', orgChart())}
       <div class="grid g2">${card('Как устроена группа', `<dl class="dl1"><div><dt>Корпоративный центр</dt><dd>АО «Самрук-Энерго» управляет дочерними организациями и входит в группу АО «Самрук-Қазына».</dd></div><div><dt>ДЗО</dt><dd>Дочерняя или зависимая организация. У каждой ДЗО свой Молодёжный совет и своё место в рейтинге.</dd></div><div><dt>Филиал</dt><dd>Подразделение ДЗО. У филиала может быть свой совет, в рейтинге он считается вместе с ДЗО.</dd></div><div><dt>Периметр Qazaq Green Power</dt><dd>ГЭС и ВИЭ-активы, переданные в Qazaq Green Power PLC. На платформе это самостоятельные организации со своими советами.</dd></div></dl>`)}
         ${card('Как это связано с платформой', `<ul class="ticks"><li>Сотрудник при регистрации выбирает свою организацию и, если нужно, филиал.</li><li>Председатель ДЗО видит и подтверждает участников своей ДЗО и её филиалов.</li><li>Региональный председатель работает со всеми организациями своего региона.</li><li>Рейтинг ведётся по ДЗО вместе с филиалами, с нормированием по численности молодёжи.</li></ul>`)}</div>`
     : councilStructure();
-  return `<div class="page">${pageHead(t('structure'), 'Структура группы компаний АО «Самрук-Энерго» и Молодёжного совета. Нажмите на организацию, чтобы открыть её совет.', '<a class="btn" href="#assets">' + icon('factory', 16) + 'Активы группы</a>')}
+  return `<div class="page">${pageHead(t('structure'), `Структура группы компаний ${BRAND.holding} и Молодёжных советов. Нажмите на организацию, чтобы открыть её совет.`, '<a class="btn" href="#assets">' + icon('factory', 16) + 'Активы группы</a>')}
     ${tabs('tabs.st', [['group', 'Группа компаний'], ['council', 'Молодёжный совет']], tab)}${body}</div>`;
 });
 
@@ -309,9 +323,9 @@ route('vacancies', () => {
   if (F.kind) list = list.filter((v) => v.kind === F.kind);
   if (q) list = list.filter((v) => norm([v.title, v.city, v.description, orgLabel(v.orgId)].join(' ')).includes(q));
   const openN = vacList().filter(vacOpen).length;
-  const steps = [['Зарегистрируйтесь', 'Создайте профиль и резюме на Qsamruk.kz — один раз для всех компаний группы «Самрук-Қазына».'], ['Найдите вакансию', 'Отфильтруйте по компании: АО «Самрук-Энерго» и его дочерние организации.'], ['Откликнитесь', 'Отправьте отклик прямо на Qsamruk. Платформа JASTAR HUB резюме не принимает.'], ['Следите за статусом', 'Этапы отбора и приглашения приходят в личный кабинет Qsamruk.']];
-  return `<div class="page">${pageHead(t('vacancies'), 'Открытые позиции в компаниях группы АО «Самрук-Энерго». Отбор проходит на Qsamruk.kz — единой платформе подбора персонала группы «Самрук-Қазына».', manager ? `<button class="btn primary" data-act="vac-add">${icon('plus', 16)}Добавить вакансию</button>` : '')}
-    <section class="qs-hero"><div class="qs-t"><span class="eyebrow">Qsamruk.kz</span><h2>Все вакансии группы — в одном месте</h2><p>Вакансии АО «Самрук-Энерго» и дочерних организаций публикуются на Qsamruk. Там же — резюме, отклик и статус отбора. Ниже — подборка от Молодёжного совета.</p></div><div class="qs-a">${extLink(QSAMRUK_URL, 'Перейти на Qsamruk.kz', 'btn primary')}<small>Откроется в новой вкладке</small></div></section>
+  const steps = [['Зарегистрируйтесь', 'Создайте профиль и резюме на Qsamruk.kz — один раз для всех компаний группы «Самрук-Қазына».'], ['Найдите вакансию', BRAND.id === 'sk' ? 'Отфильтруйте по нужной компании группы и региону.' : 'Отфильтруйте по компании: АО «Самрук-Энерго» и его дочерние организации.'], ['Откликнитесь', 'Отправьте отклик прямо на Qsamruk. Платформа JASTAR HUB резюме не принимает.'], ['Следите за статусом', 'Этапы отбора и приглашения приходят в личный кабинет Qsamruk.']];
+  return `<div class="page">${pageHead(t('vacancies'), `Открытые позиции в компаниях группы ${BRAND.holding}. Отбор проходит на Qsamruk.kz — единой платформе подбора персонала группы «Самрук-Қазына».`, manager ? `<button class="btn primary" data-act="vac-add">${icon('plus', 16)}Добавить вакансию</button>` : '')}
+    <section class="qs-hero"><div class="qs-t"><span class="eyebrow">Qsamruk.kz</span><h2>Все вакансии группы — в одном месте</h2><p>${BRAND.id === 'sk' ? 'Вакансии фонда, портфельных компаний и их ДЗО' : 'Вакансии АО «Самрук-Энерго» и дочерних организаций'} публикуются на Qsamruk. Там же — резюме, отклик и статус отбора. Ниже — подборка от Молодёжного совета.</p></div><div class="qs-a">${extLink(QSAMRUK_URL, 'Перейти на Qsamruk.kz', 'btn primary')}<small>Откроется в новой вкладке</small></div></section>
     <ol class="qs-steps">${steps.map(([h, d], i) => `<li><b><span>${i + 1}</span>${esc(h)}</b><p>${esc(d)}</p></li>`).join('')}</ol>
     <div class="filters">${seg('vac.kind', [['', 'Все'], ...Object.entries(VAC_KINDS)], F.kind)}${sel('vac-org', rootOptions('Все организации'), F.org, 'data-live="vac.org" aria-label="Организация"')}<div class="f-search">${icon('search', 16)}<input id="vac-q" type="search" placeholder="Должность или город" value="${esc(F.q)}" data-live="vac.q" aria-label="Поиск вакансий"></div>${manager ? `<label class="check inline-check"><input type="checkbox" ${F.all ? 'checked' : ''} data-act-change="vac-all"><span>Показать закрытые</span></label>` : ''}</div>
     <p class="count">В подборке ${openN} ${plural(openN, 'открытая вакансия', 'открытые вакансии', 'открытых вакансий')}</p>
@@ -377,13 +391,13 @@ route('contacts', () => {
   const sites = orgTree().filter((o) => prof(o).site);
   const hp = prof(head);
   const councilPeople = [chair ? [chair, 'Председатель Молодёжного совета'] : null, ...deps.map((u) => [u, 'Заместитель председателя'])].filter(Boolean);
-  return `<div class="page">${pageHead(t('contacts'), 'К кому обратиться по платформе, Молодёжному совету и работе в группе «Самрук-Энерго».', `<a class="btn" href="#feedback">${icon('message', 16)}Написать обращение</a>${adm ? `<button class="btn primary" data-act="people-add">${icon('plus', 16)}Добавить контакт</button>` : ''}`)}
+  return `<div class="page">${pageHead(t('contacts'), `К кому обратиться по платформе, Молодёжным советам и работе в ${BRAND.groupOf.replace('группы', 'группе')}.`, `<a class="btn" href="#feedback">${icon('message', 16)}Написать обращение</a>${adm ? `<button class="btn primary" data-act="people-add">${icon('plus', 16)}Добавить контакт</button>` : ''}`)}
     <section><h2 class="sec-h">Ключевые контакты</h2>
       ${people.length ? `<div class="kpgrid">${people.map(keyPersonCard).join('')}</div>` : emptyState('user', 'Контакты не указаны', adm ? 'Добавьте руководителя проекта и администратора системы.' : 'Скоро здесь появятся контакты команды платформы.')}</section>
     <div class="grid g3">
-      ${card('Молодёжный совет', councilPeople.length ? councilPeople.map(([u, role]) => `<div class="cs-ct"><a class="person-s" href="#person-${u.id}">${avatar(u, 40)}<span><b>${esc(u.name)}</b><small>${esc(role)}</small></span></a>${personContacts(u) || '<p class="muted sm">Рабочие контакты не указаны в профиле</p>'}</div>`).join('') : '<p class="muted">Председатель совета пока не назначен.</p>', `<button class="lnk" data-act="go-councils">Контакты советов ДЗО${icon('chevR', 14)}</button>`)}
+      ${card('Молодёжный совет', councilPeople.length ? councilPeople.map(([u, role]) => `<div class="cs-ct"><a class="person-s" href="#person-${u.id}">${avatar(u, 40)}<span><b>${esc(u.name)}</b><small>${esc(role)}</small></span></a>${personContacts(u) || '<p class="muted sm">Рабочие контакты не указаны в профиле</p>'}</div>`).join('') : '<p class="muted">Председатель совета пока не назначен.</p>', `<button class="lnk" data-act="go-councils">Контакты советов${icon('chevR', 14)}</button>`)}
       ${contactsCard()}
-      ${card('Корпоративный центр', `<div class="contact-list">${hp.address ? `<div class="ct">${icon('pin', 18)}<span><small>Адрес</small><b>${esc(hp.address)}</b></span><span></span></div>` : ''}<div class="ct">${icon('globe', 18)}<span><small>Сайт</small><b>${extLink('https://samruk-energy.kz', 'samruk-energy.kz')}</b></span><span></span></div><div class="ct">${icon('briefcase', 18)}<span><small>Вакансии группы</small><b>${extLink(QSAMRUK_URL, 'qsamruk.kz')}</b></span><span></span></div><div class="ct">${icon('building', 18)}<span><small>Входит в группу</small><b>${extLink('https://sk.kz', 'АО «Самрук-Қазына»')}</b></span><span></span></div></div>`)}
+      ${card(BRAND.types.fund, `<div class="contact-list">${hp.address ? `<div class="ct">${icon('pin', 18)}<span><small>Адрес</small><b>${esc(hp.address)}</b></span><span></span></div>` : ''}<div class="ct">${icon('globe', 18)}<span><small>Сайт</small><b>${extLink('https://' + BRAND.site, BRAND.site)}</b></span><span></span></div><div class="ct">${icon('briefcase', 18)}<span><small>Вакансии группы</small><b>${extLink(QSAMRUK_URL, 'qsamruk.kz')}</b></span><span></span></div>${BRAND.parentGroup ? `<div class="ct">${icon('building', 18)}<span><small>Входит в группу</small><b>${extLink('https://sk.kz', BRAND.parentGroup)}</b></span><span></span></div>` : ''}</div>`)}
     </div>
     ${card('Сайты компаний группы', `<div class="site-grid">${sites.map((o) => `<a class="site-l" href="${esc(siteUrl(prof(o).site))}" target="_blank" rel="noopener">${orgLogo(o, 28)}<span class="st"><b>${esc(o.name)}</b><small>${esc(prof(o).site)}</small></span>${icon('ext', 14)}</a>`).join('')}</div>`, '<a class="lnk" href="#assets">Активы группы' + icon('chevR', 14) + '</a>')}
   </div>`;

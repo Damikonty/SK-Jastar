@@ -971,6 +971,16 @@ a.cs-p:hover { border-color: var(--accent); }
   .inline-check { white-space: normal; }
 }
 
+/* показательная версия: план на год и оргструктура фонда */
+.plan-kpis { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.plan-kpis span { flex: 1 1 160px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; color: var(--ink-2); display: flex; flex-direction: column; gap: 2px; }
+.plan-kpis b { font: 600 24px/1.1 var(--f-display); color: var(--ink); font-variant-numeric: tabular-nums; }
+.oc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 14px; position: relative; }
+.oc-pc { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--surface); min-width: 0; }
+.oc-pc .oc-node.hold { border-color: var(--accent); }
+.oc-root.solo { padding-bottom: 16px; }
+.oc-root.solo::after { display: none; }
+
 </style>
 </head>
 <body>
@@ -993,6 +1003,26 @@ a.cs-p:hover { border-color: var(--accent); }
    ===================================================================== */
 
 const SCHEMA_VERSION = 5;
+/* Вариант сборки: по умолчанию — группа «Самрук-Энерго». Показательная версия для всей группы
+   «Самрук-Қазына» подключает window.JASTAR_VARIANT (src/variant-sk.js) до этого файла. */
+const VARIANT = (typeof window !== 'undefined' && window.JASTAR_VARIANT) || null;
+const BRAND = Object.assign({
+  id: 'se',
+  storeKey: 'jastar-hub',
+  groupOf: 'группы «Самрук-Энерго»',
+  holding: 'АО «Самрук-Энерго»',
+  sidebar: 'Молодёжный совет группы «Самрук-Энерго»',
+  heroEyebrow: 'Единая цифровая платформа Молодёжного совета группы компаний АО «Самрук-Энерго»',
+  companiesLead: 'Корпоративный центр, дочерние и зависимые организации группы АО «Самрук-Энерго» и их Молодёжные советы.',
+  types: { fund: 'Корпоративный центр', portfolio: 'ДЗО', subsidiary: 'Филиал' },
+  typesPlural: { portfolio: 'ДЗО', subsidiary: 'Филиалы' },
+  kpiPortfolio: 'Дочерних организаций',
+  groupLevel: 'ДЗО вместе с филиалами',
+  ageCheck: 'Мне 35 лет или меньше, я работаю в корпоративном центре или дочерней организации АО «Самрук-Энерго»',
+  contactsExample: 'Например: Молодёжный совет АО «Самрук-Энерго»',
+  site: 'samruk-energy.kz',
+  parentGroup: 'АО «Самрук-Қазына»'
+}, (VARIANT && VARIANT.brand) || {});
 /* Подпись оргструктуры: если состав организаций изменится, сохранённые в браузере демо-данные пересоздаются */
 const SEED_SIG = () => ORGS_SEED.map((o) => o.id + ':' + o.type + ':' + (o.parentId || '')).join('|');
 
@@ -1038,7 +1068,7 @@ const KZ_OUTLINE = [
 /* Организационная структура группы компаний АО «Самрук-Энерго».
    type: fund — корпоративный центр, portfolio — дочерняя/зависимая организация (ДЗО), subsidiary — филиал ДЗО.
    Численность молодёжи до 35 лет (young) — ОРИЕНТИРОВОЧНАЯ, администратор уточняет её в админ-панели. */
-const ORGS_SEED = [
+const ORGS_SEED = (VARIANT && VARIANT.orgs) || [
   { id: 'se', type: 'fund', parentId: null, name: 'Самрук-Энерго', full: 'АО «Самрук-Энерго»', regionId: 'ast', sector: 'Управление группой компаний', young: 160 },
   { id: 'qgp', type: 'portfolio', parentId: 'se', name: 'Qazaq Green Power', full: 'Qazaq Green Power PLC', regionId: 'ast', sector: 'Возобновляемая энергетика', young: 25 },
   { id: 'pves', type: 'portfolio', parentId: 'se', name: 'ПВЭС', full: 'ТОО «ПВЭС»', regionId: 'akm', sector: 'Ветровая генерация', young: 15 },
@@ -1062,7 +1092,7 @@ const ORGS_SEED = [
 ];
 
 /* Организации, сотрудники которых работают в разных регионах (сейчас таких нет: все работают по месту организации) */
-const NETWORK_ORGS = [];
+const NETWORK_ORGS = (VARIANT && VARIANT.network) || [];
 
 /* Профили организаций для разделов «Активы группы» и «Оргструктура».
    Факты — по открытым данным сайта samruk-energy.kz и публикациям СМИ (ссылка — в src).
@@ -1071,7 +1101,7 @@ const NETWORK_ORGS = [];
    holding: 'qgp' — актив в периметре Qazaq Green Power PLC.
    Численность персонала (staff) не публикуется: её вносит председатель совета или администратор. */
 const SE_SRC = 'https://samruk-energy.kz/en/company/group-of-companies/';
-const ORG_PROFILE = {
+const ORG_PROFILE = (VARIANT && VARIANT.profiles) || {
   se: { kind: 'center', what: 'Корпоративный центр группы: управляет дочерними организациями, определяет стратегию развития, инвестиционные и финансовые решения группы. Входит в группу АО «Самрук-Қазына».', city: 'г. Астана', address: 'г. Астана, пр. Кабанбай батыра, 15А, блок Б', site: 'samruk-energy.kz', src: SE_SRC.replace('/en/', '/ru/') },
   qgp: { kind: 'holding', what: 'Компания группы по гидро- и возобновляемой энергетике: модернизация действующих и строительство новых генерирующих мощностей, новые энергетические технологии. Создана 4 ноября 2022 года.', city: 'г. Астана', share: '100% — АО «Самрук-Энерго»', since: '2022', objects: ['Мойнакская ГЭС', 'Шардаринская ГЭС', 'Усть-Каменогорская ГЭС', 'Шульбинская ГЭС', 'Бухтарминская ГЭС', 'Samruk-Green Energy', 'ПВЭС'], src: SE_SRC + 'qgp-plc' },
   pves: { kind: 'res', holding: 'qgp', what: 'Первая ветровая электрическая станция: производит электроэнергию на 22 ветроустановках мощностью 2,05 МВт каждая. Введена в эксплуатацию в 2015 году.', city: 'Район г. Ерейментау, Акмолинская область', mw: 45, objects: ['ВЭС 45 МВт, 22 ветроустановки'], since: '2015', site: 'pves.kz', src: SE_SRC + 'pves' },
@@ -1095,7 +1125,7 @@ const ORG_PROFILE = {
 };
 
 /* Ключевые контакты по умолчанию (администратор меняет их на странице «Контакты») */
-const CONTACT_PEOPLE_DEFAULT = [
+const CONTACT_PEOPLE_DEFAULT = (VARIANT && VARIANT.people) || [
   { id: 'author', role: 'Руководитель проекта JASTAR HUB', name: 'Сабанов Дамир Бисембаевич', position: 'Член Молодёжного совета АО «Самрук-Энерго»', org: 'АО «Самрук-Энерго», г. Астана', topics: 'Развитие платформы, идеи и предложения, сотрудничество с советами ДЗО', email: '', phone: '', telegram: '' },
   { id: 'sysadmin', role: 'Администратор системы', name: '', position: '', org: '', topics: 'Доступ и роли, учётные записи, восстановление входа, ошибки на сайте', email: '', phone: '', telegram: '' }
 ];
@@ -1103,14 +1133,14 @@ const QSAMRUK_URL = 'https://www.qsamruk.kz/';
 /* Тестовые вакансии демо-версии (в рабочей версии их добавляют администратор и председатели) */
 function demoVacancies(base = new Date()) {
   const d = (n) => { const x = new Date(base); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
-  return [
+  return ((VARIANT && VARIANT.vacancies) || [
     ['ales', 'Инженер-теплотехник', 'Алматы', 'job', 21, 'Обслуживание основного оборудования ТЭЦ, участие в ремонтной кампании. Опыт работы от 1 года.'],
     ['se', 'Стажёр в департамент цифровизации', 'Астана', 'intern', 14, 'Оплачиваемая стажировка на 3 месяца для студентов последних курсов и выпускников.'],
     ['egres', 'Машинист энергоблока', 'Экибастуз', 'job', 30, 'Эксплуатация энергоблока 500 МВт. Профильное образование, готовность к сменному графику.'],
     ['qgp', 'Ведущий специалист по проектам ВИЭ', 'Астана', 'job', null, 'Сопровождение проектов ветровых и солнечных станций: от технико-экономического обоснования до ввода.'],
     ['azhk', 'Электромонтёр по ремонту воздушных линий', 'Алматы', 'job', 10, 'Ремонт и обслуживание воздушных линий 0,4–10 кВ. Группа по электробезопасности не ниже III.'],
     ['shges', 'Программа «Молодой специалист»', 'Шардара', 'program', 40, 'Годовая программа адаптации для выпускников энергетических специальностей с наставником.']
-  ].map(([orgId, title, city, kind, dl, description], i) => ({ id: 'vac' + (i + 1), orgId, title, city, kind, deadline: dl == null ? null : d(dl), url: QSAMRUK_URL, description, status: 'open', createdBy: null, createdAt: d(-i - 1) + 'T09:00:00.000Z', demo: true }));
+  ]).map(([orgId, title, city, kind, dl, description], i) => ({ id: 'vac' + (i + 1), orgId, title, city, kind, deadline: dl == null ? null : d(dl), url: QSAMRUK_URL, description, status: 'open', createdBy: null, createdAt: d(-i - 1) + 'T09:00:00.000Z', demo: true }));
 }
 
 const CATS = [
@@ -1294,7 +1324,7 @@ function seedDB() {
     demo: true
   }));
   /* Склонность к активности: небольшие советы специально сделаны очень активными, чтобы показать нормирование */
-  const activity = { se: 1.2, qgp: 1.4, pves: 1.3, ewp: 1.2, sge: 1.25, shges: 1.0, mges: 1.3, ukges: 1.05, bges: 0.95, shulges: 1.1, azhk: 0.9, azhkes: 0.75, ales: 1.05, egres: 1.1, egres2: 0.9, esc: 1.15, escoco: 0.85, semey: 0.8, oskemen: 0.85, ktec: 1.0 };
+  const activity = Object.assign({ se: 1.2, qgp: 1.4, pves: 1.3, ewp: 1.2, sge: 1.25, shges: 1.0, mges: 1.3, ukges: 1.05, bges: 0.95, shulges: 1.1, azhk: 0.9, azhkes: 0.75, ales: 1.05, egres: 1.1, egres2: 0.9, esc: 1.15, escoco: 0.85, semey: 0.8, oskemen: 0.85, ktec: 1.0 }, (VARIANT && VARIANT.activity) || {});
   const quality = {}; orgs.forEach((o) => { quality[o.id] = 6.2 + R() * 2.6; });
 
   /* --- пользователи --- */
@@ -1352,22 +1382,23 @@ function seedDB() {
     }
   });
   /* Карагандинский региональный председатель КТЖ — для демо-входа */
-  const regOrg = orgs.find((o) => o.id === 'egres');
-  const regDemo = users.find((u) => u.companyId === 'egres' && u.role === 'regional');
-  if (regDemo) { regDemo.regionId = 'pav'; regDemo.city = 'Экибастуз'; }
-  regOrg.council.regionalReps = users.filter((u) => u.companyId === 'egres' && u.role === 'regional').map((u) => u.id);
+  const regOrgId = (VARIANT && VARIANT.regionalDemoOrg) || 'egres';
+  const regOrg = orgs.find((o) => o.id === regOrgId) || orgs[1];
+  const regDemo = users.find((u) => u.companyId === regOrg.id && u.role === 'regional');
+  if (regDemo && !VARIANT) { regDemo.regionId = 'pav'; regDemo.city = 'Экибастуз'; }
+  regOrg.council.regionalReps = users.filter((u) => u.companyId === regOrg.id && u.role === 'regional').map((u) => u.id);
   /* несколько участников ожидают подтверждения членства */
   users.filter((u) => u.role === 'member').slice(5, 200).forEach((u, i) => { if (i % 23 === 0) u.verified = false; });
 
   /* --- эксперты --- */
-  const experts = [
+  const experts = ((VARIANT && VARIANT.experts) || [
     { org: null, title: 'Внешний эксперт, проектный менеджмент', conflicts: [] },
     { org: null, title: 'Внешний эксперт, социальные проекты и НКО', conflicts: [] },
     { org: 'ales', title: 'Эксперт группы, АлЭС', conflicts: ['ales'] },
     { org: 'egres2', title: 'Эксперт группы, Экибастузская ГРЭС-2', conflicts: ['egres2'] },
     { org: null, title: 'Внешний эксперт, HR и развитие персонала', conflicts: ['sge'] },
     { org: 'esc', title: 'Эксперт группы, Energy Solution Center', conflicts: ['esc'] }
-  ].map((x) => {
+  ]).map((x) => {
     const host = x.org ? orgs.find((o) => o.id === x.org) : orgs[0];
     return makeUser(host, { role: 'expert', councilRole: 'Участник', position: x.title, companyId: x.org, conflicts: x.conflicts, regionId: 'ast', city: 'Астана', dept: x.org ? 'Экспертный пул группы' : 'Независимый эксперт', bio: 'Независимый эксперт платформы JASTAR HUB. Профиль тестовый.' });
   });
@@ -1381,11 +1412,11 @@ function seedDB() {
   const statusBag = [...Array(70).fill('confirmed'), ...Array(8).fill('in_review'), ...Array(7).fill('submitted'), ...Array(5).fill('needs_info'), ...Array(5).fill('rejected'), ...Array(5).fill('draft')];
   const orgUsers = (oid) => users.filter((u) => u.companyId === oid && ['member', 'chair', 'regional'].includes(u.role));
   orgs.forEach((o) => {
-    const count = Math.max(2, Math.round(activity[o.id] * (1 + Math.sqrt(o.young) / 7)));
+    const count = Math.max(2, Math.round((activity[o.id] || 1) * (1 + Math.sqrt(o.young) / 7)));
     const titlesUsed = new Set();
     const team0 = orgUsers(o.id);
     for (let i = 0; i < count; i++) {
-      const cat = i === 0 && o.id === 'se' ? 'inter' : pick(catBag);
+      const cat = i === 0 && o.type === 'fund' ? 'inter' : pick(catBag);
       const tpl = PROJECT_TPL[cat];
       let title = pick(tpl.titles);
       if (titlesUsed.has(title)) title += ` — ${pick(['весна', 'осень', 'II поток', 'сезон 2', 'региональный этап'])}`;
@@ -1460,7 +1491,7 @@ function seedDB() {
   const events = [];
   let eN = 1;
   orgs.forEach((o) => {
-    const n = Math.max(1, Math.round(activity[o.id] * (1 + Math.sqrt(o.young) / 14)));
+    const n = Math.max(1, Math.round((activity[o.id] || 1) * (1 + Math.sqrt(o.young) / 14)));
     const people = orgUsers(o.id);
     for (let i = 0; i < n + 1; i++) {
       const upcoming = i === n || chance(0.22);
@@ -1496,6 +1527,86 @@ function seedDB() {
     }
   });
 
+  /* --- показательная версия: текущие проекты и план на следующий год (только в варианте с showcase) --- */
+  if (VARIANT && VARIANT.showcase) {
+    const SC = VARIANT.showcase;
+    const year = SC.year;
+    const dateIn = (m, d) => { const x = new Date(year, m, d, 12); return x.toISOString().slice(0, 10); };
+    const addDays = (iso, n) => { const x = new Date(iso + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
+    const mkTeam = (o) => {
+      const members = shuffle(orgUsers(o.id));
+      if (!members.length) return null;
+      const team = [{ userId: members[0].id, role: 'Руководитель проекта', share: 40 }];
+      const rest = members.slice(1, rint(3, 5));
+      rest.forEach((u, k) => team.push({ userId: u.id, role: pick(['Координатор', 'Участник команды', 'Ответственный за коммуникации', 'Аналитик']), share: 0 }));
+      let left = 60; rest.forEach((t, k) => { const sh = k === rest.length - 1 ? left : Math.round(60 / rest.length); team[k + 1].share = sh; left -= sh; });
+      if (!rest.length) team[0].share = 100;
+      return team;
+    };
+    const planProject = (o, cat, title, start, end, opts = {}) => {
+      const team = mkTeam(o); if (!team) return;
+      const tpl = PROJECT_TPL[cat];
+      const partnerOrgIds = opts.partners || [];
+      partnerOrgIds.forEach((pid) => { const cand = orgUsers(pid); if (cand.length) team.push({ userId: pick(cand).id, role: 'Партнёр от ' + orgName0(pid), share: 0 }); });
+      const participants = opts.participants || rint(20, 120);
+      projects.push({
+        id: 'p' + pN++, title, orgId: o.id, companyId: o.type === 'subsidiary' ? o.parentId : o.id,
+        regionId: opts.regionId || o.regionId, leaderId: team[0].userId, initiatorId: team[0].userId, team, start, end, category: cat,
+        desc: opts.desc || `${title} — ${opts.current ? 'текущий' : 'запланированный'} проект Молодёжного совета ${o.name}. ${tpl.goal} Описание тестовое.`,
+        goal: tpl.goal + ' Задачи: подготовить программу, привлечь участников, зафиксировать результаты и подготовить отчёт.',
+        problem: tpl.problem, participants, reach: Math.round(participants * (1.3 + R())), volunteerHours: ['social', 'charity', 'eco'].includes(cat) ? participants * 3 : 0,
+        results: '', kpis: tpl.kpis.slice(0, 3).map(([name, unit, a, b]) => { const plan = rint(a, b); return { name, unit, plan, fact: opts.current ? Math.round(plan * (0.2 + R() * 0.5)) : 0 }; }),
+        effectType: cat === 'innov' ? 'economic' : 'social', effect: tpl.effect, media: [],
+        partners: partnerOrgIds.length ? 'Молодёжные советы компаний-партнёров группы' : '', partnerOrgIds,
+        status: 'planned', plan: true, review: null, history: [{ ts: tsISO(-rint(5, 40)), actorId: team[0].userId, action: opts.current ? 'Проект запущен' : 'Проект включён в план' }],
+        comments: [], createdBy: team[0].userId, createdAt: tsISO(-rint(5, 40)), demo: true
+      });
+    };
+    const orgName0 = (id) => (orgs.find((o) => o.id === id) || {}).name || id;
+    /* флагманские проекты группы на год */
+    (SC.flagshipProjects || []).forEach(([orgId, cat, title, m, d, dur, partners, desc]) => {
+      const o = orgs.find((x) => x.id === orgId); if (!o) return;
+      const start = dateIn(m, d);
+      planProject(o, cat, title, start, addDays(start, dur), { partners, desc, participants: rint(80, 400) });
+    });
+    /* текущие проекты: начались недавно, завершатся в ближайшие месяцы */
+    orgs.filter((o) => o.type !== 'fund').forEach((o, i) => {
+      if (i % 2 && o.type === 'subsidiary') return;
+      const cat = pick(catBag);
+      const start = dayISO(-rint(15, 75));
+      planProject(o, cat, pick(PROJECT_TPL[cat].titles), start, dayISO(rint(20, 140)), { current: true });
+    });
+    /* план проектов советов на год */
+    orgs.forEach((o, i) => {
+      if (o.type === 'subsidiary' && i % 3) return;
+      const cat = pick(catBag);
+      const start = dateIn(rint(0, 10), rint(1, 25));
+      planProject(o, cat, pick(PROJECT_TPL[cat].titles) + ' ' + year, start, addDays(start, rint(30, 120)));
+    });
+    /* мероприятия на год: флагманские и по 3–5 в месяц от разных советов */
+    const planEvent = (o, cat, title, date, opts = {}) => {
+      const people = orgUsers(o.id);
+      const organizers = shuffle(people).slice(0, rint(1, 2)).map((u) => u.id);
+      if (!organizers.length) return;
+      const cap = opts.capacity || rint(30, 150);
+      events.push({
+        id: 'e' + eN++, title, orgId: o.id, regionId: opts.regionId || o.regionId, date, time: opts.time || pick(['10:00', '11:00', '15:00', '16:30']),
+        place: opts.place || pick(PLACES), category: cat, desc: opts.desc || `Мероприятие Молодёжного совета ${o.name} в плане на ${year} год. Описание тестовое.`,
+        organizers, capacity: cap, registered: shuffle(users.filter((u) => ['member', 'chair', 'regional'].includes(u.role))).slice(0, rint(3, Math.min(25, cap))).map((u) => u.id),
+        attended: 0, summary: '', media: [], status: 'planned', review: null, history: [{ ts: tsISO(-rint(3, 30)), actorId: organizers[0], action: 'Мероприятие опубликовано' }], createdBy: organizers[0], demo: true
+      });
+    };
+    (SC.flagshipEvents || []).forEach(([orgId, cat, title, m, d, place, cap, desc]) => {
+      const o = orgs.find((x) => x.id === orgId); if (o) planEvent(o, cat, title, dateIn(m, d), { place, capacity: cap, desc });
+    });
+    /* ближайшие мероприятия: оживлённый текущий и следующий месяц */
+    for (let k = 0; k < 14; k++) { const o = pick(orgs); const cat = pick(catBag); planEvent(o, cat, pick(EVENT_TPL[cat]), dayISO(rint(1, 40))); }
+    for (let m = 0; m < 12; m++) {
+      const n = rint(3, 5);
+      shuffle(orgs).slice(0, n).forEach((o) => { const cat = pick(catBag); planEvent(o, cat, pick(EVENT_TPL[cat]), dateIn(m, rint(3, 27))); });
+    }
+  }
+
   /* --- личные достижения --- */
   const achievements = [];
   let aN = 1;
@@ -1529,7 +1640,7 @@ function seedDB() {
   /* --- новости --- */
   const orgName = (id) => orgs.find((o) => o.id === id).name;
   const chairOf = (id) => orgs.find((o) => o.id === id).council.chairId;
-  const newsSeed = [
+  const newsSeed = (VARIANT && VARIANT.news) || [
     ['announce', 'se', 'Стартовал приём заявок на кейс-чемпионат молодёжи группы', 'Команды из разных организаций группы решат реальные задачи компаний «Самрук-Энерго».', -3],
     ['interview', 'ales', 'Председатель Молодёжного совета АлЭС о том, как измерять эффект проектов', 'Почему охват без результата ничего не говорит и как совет перешёл на KPI.', -6],
     ['photo', 'egres', 'Фотоотчёт: молодёжь Экибастузской ГРЭС-1 высадила аллею в Экибастузе', 'Акция прошла в рамках экологического направления совета.', -9],
@@ -1554,7 +1665,7 @@ function seedDB() {
   }));
 
   /* --- база знаний --- */
-  const kbSeed = [
+  const kbSeed = (VARIANT && VARIANT.kb) || [
     ['template', 'Шаблон паспорта проекта Молодёжного совета', 'Структура: проблема, цель, задачи, команда, KPI, бюджет, риски.', 'se'],
     ['template', 'Шаблон отчёта о реализации проекта', 'Фактические результаты, KPI план/факт, охват, доказательства.', 'se'],
     ['howto', 'Как организовать мероприятие: чек-лист на 4 недели', 'Пошаговый план от идеи до отчёта и фотоотчёта.', 'se'],
@@ -1577,7 +1688,7 @@ function seedDB() {
 
   /* --- обратная связь и благодарности (тестовые) --- */
   const fbPool = users.filter((u) => ['member', 'chair', 'regional'].includes(u.role));
-  const memberDemo = users.find((u) => u.companyId === 'azhk' && u.role === 'member');
+  const memberDemo = users.find((u) => u.companyId === ((VARIANT && VARIANT.memberDemoOrg) || 'azhk') && u.role === 'member');
   const thanksTexts = [
     'Спасибо за помощь с подготовкой отчёта по проекту — без вас мы бы не уложились в срок.',
     'Благодарю за наставничество в первые месяцы работы: в процессах стало намного проще разобраться.',
@@ -1594,7 +1705,7 @@ function seedDB() {
     let to = pick(fbPool); if (to.id === from.id) to = fbPool[(fbPool.indexOf(to) + 1) % fbPool.length];
     fbAdd({ userId: from.id, kind: 'thanks', body: text, targetType: 'user', targetId: i === 1 ? memberDemo.id : to.id, isPublic: true, status: 'published', createdAt: tsISO(-rint(1, 40)) });
   });
-  fbAdd({ userId: pick(fbPool).id, kind: 'thanks', body: 'Спасибо Молодёжному совету АлЭС за открытый обмен практиками по наставничеству.', targetType: 'org', targetId: 'ales', isPublic: true, status: 'published', createdAt: tsISO(-12) });
+  fbAdd({ userId: pick(fbPool).id, kind: 'thanks', body: (VARIANT && VARIANT.thanksOrgText) || 'Спасибо Молодёжному совету АлЭС за открытый обмен практиками по наставничеству.', targetType: 'org', targetId: (VARIANT && VARIANT.thanksOrg) || 'ales', isPublic: true, status: 'published', createdAt: tsISO(-12) });
   fbAdd({ userId: pick(fbPool).id, kind: 'thanks', body: 'Спасибо команде платформы: подавать проекты на проверку стало намного проще.', targetType: 'platform', isPublic: true, status: 'published', createdAt: tsISO(-5) });
   fbAdd({ userId: pick(fbPool).id, kind: 'suggestion', subject: 'Шаблон отчёта для мероприятий', body: 'Предлагаю добавить в базу знаний готовый шаблон отчёта по мероприятию с листом регистрации — сейчас каждый совет делает свой.', section: 'Мероприятия', status: 'done', reply: 'Спасибо! Шаблон добавлен в базу знаний.', repliedBy: admin.id, repliedAt: tsISO(-3), createdAt: tsISO(-9) });
   fbAdd({ userId: pick(fbPool).id, kind: 'recommendation', subject: 'Напоминания о сроках проверки', body: 'Рекомендую присылать председателю напоминание, если заявка совета ждёт проверки дольше недели.', section: 'Экспертиза', status: 'in_work', createdAt: tsISO(-4) });
@@ -1617,7 +1728,7 @@ function seedDB() {
     session: { userId: null },
     demoAccounts: {
       admin: admin.id,
-      chair: orgs.find((o) => o.id === 'ales').council.chairId,
+      chair: orgs.find((o) => o.id === ((VARIANT && VARIANT.chairDemoOrg) || 'ales')).council.chairId,
       regional: regDemo ? regDemo.id : null,
       member: memberDemo.id,
       expert: experts[0].id,
@@ -1670,7 +1781,7 @@ function kbContent(kind, title, desc) {
    бэкенда меняется только реализация этих функций.
    ===================================================================== */
 
-const STORE_KEY = 'jastar-hub:v' + SCHEMA_VERSION;
+const STORE_KEY = BRAND.storeKey + ':v' + SCHEMA_VERSION;
 let DB = null;
 let DB_REV = 0;
 let STORAGE_OK = true;
@@ -1685,7 +1796,7 @@ function loadDB() {
     }
   } catch (e) { STORAGE_OK = false; }
   /* удаляем данные прежних версий (в том числе со старой структурой организаций) */
-  try { Object.keys(localStorage).filter((k) => k.startsWith('jastar-hub:v') && k !== STORE_KEY).forEach((k) => localStorage.removeItem(k)); } catch (e) { /* не критично */ }
+  try { Object.keys(localStorage).filter((k) => k.startsWith(BRAND.storeKey + ':v') && k !== STORE_KEY).forEach((k) => localStorage.removeItem(k)); } catch (e) { /* не критично */ }
   DB = seedDB();
   reindex();
   saveDB(true);
@@ -1748,8 +1859,8 @@ const familyOf = (id) => [id, ...childrenOf(id).map((o) => o.id)];
 const orgLabel = (id) => (O(id) ? O(id).name : '—');
 /* Структура группы: корпоративный центр (fund) → ДЗО (portfolio) → филиалы ДЗО (subsidiary) */
 const headId = () => ((DB.orgs || []).find((o) => o.type === 'fund') || { id: 'se' }).id;
-const orgTypeLabel = (o) => (!o ? '' : o.type === 'fund' ? 'Корпоративный центр' : o.type === 'portfolio' ? 'ДЗО' : 'Филиал ' + orgLabel(o.parentId));
-const groupName = (o) => { const n = DB.orgs.filter((x) => x.parentId === o.id && x.type === 'subsidiary').length; return o.name + (n ? (n > 1 ? ' с филиалами' : ' с филиалом') : ''); };
+const orgTypeLabel = (o) => (!o ? '' : o.type === 'fund' ? BRAND.types.fund : o.type === 'portfolio' ? BRAND.types.portfolio : BRAND.types.subsidiary + ' ' + orgLabel(o.parentId));
+const groupName = (o) => { const n = DB.orgs.filter((x) => x.parentId === o.id && x.type === 'subsidiary').length; return o.name + (n ? (BRAND.id === 'sk' ? ' с ДЗО' : n > 1 ? ' с филиалами' : ' с филиалом') : ''); };
 /* Порядок по структуре: корпоративный центр, затем каждое ДЗО со своими филиалами */
 function orgTree() {
   const out = DB.orgs.filter((o) => o.type === 'fund');
@@ -1760,6 +1871,8 @@ function orgTree() {
 const rootOptions = (allLabel) => [['', allLabel], ...DB.orgs.filter((o) => o.type !== 'subsidiary').map((o) => [o.id, groupName(o)])];
 const ABBR = { se: 'СЭ', qgp: 'QGP', pves: 'ПВЭС', ewp: 'EWP', sge: 'SGE', shges: 'ШГЭС', mges: 'МГЭС', ukges: 'УКГЭС', bges: 'БГЭС', shulges: 'ШуГЭС', azhk: 'АЖК', azhkes: 'ЭС', ales: 'АлЭС', egres: 'ГРЭС1', egres2: 'ГРЭС2', esc: 'ESC', escoco: 'ОЦО', semey: 'СмЭ', oskemen: 'ОсЭ', ktec: 'КТЭЦ' };
 const ORG_HUE = { se: 192, qgp: 150, pves: 168, ewp: 176, sge: 120, shges: 205, mges: 214, ukges: 222, bges: 230, shulges: 238, azhk: 32, ales: 4, egres: 268, egres2: 282, esc: 250, semey: 44, oskemen: 340, ktec: 20 };
+if (VARIANT && VARIANT.abbr) Object.assign(ABBR, VARIANT.abbr);
+if (VARIANT && VARIANT.hue) Object.assign(ORG_HUE, VARIANT.hue);
 function orgAbbr(o) {
   if (o.abbr) return o.abbr;
   if (ABBR[o.id]) return ABBR[o.id];
@@ -2462,7 +2575,7 @@ function orgLogo(o, size = 40) {
   return `<span class="logo ${o.type === 'subsidiary' ? 'sub' : ''}" style="--s:${size}px;--h:${h};font-size:${(size * k).toFixed(1)}px" title="${esc(o.full)}">${esc(ab)}</span>`;
 }
 const chip = (txt, tone = '', ic = '') => `<span class="chip ${tone ? 'tone-' + tone : ''}">${ic ? icon(ic, 13) : ''}${esc(txt)}</span>`;
-const statusChip = (s) => { const x = STATUS[s] || { label: s, tone: '' }; return `<span class="chip st tone-${x.tone}"><i class="dot"></i>${esc(x.label)}</span>`; };
+const statusChip = (s, ent) => { let x = STATUS[s] || { label: s, tone: '' }; if (ent && s === 'planned' && ent.start && ent.end) x = ent.start <= todayISO() ? { label: 'В работе', tone: 'accent' } : { label: 'Запланирован', tone: 'info' }; return `<span class="chip st tone-${x.tone}"><i class="dot"></i>${esc(x.label)}</span>`; };
 const catChip = (c) => { const x = CAT(c); return `<span class="chip cat" style="--c:${x.color}">${icon(x.icon, 13)}${esc(x.short)}</span>`; };
 const testChip = () => `<span class="chip tone-test" title="Тестовая запись демо-версии">ТЕСТ</span>`;
 const userLink = (u) => (u ? `<a href="#person-${u.id}" class="ulink">${esc(u.name)}</a>` : '—');
@@ -2729,7 +2842,7 @@ function brandMark(s = 34) {
 function renderSide() {
   const active = NAV_OF[CURRENT.name] || CURRENT.name;
   const pending = me() && myRole() === 'expert' ? [...DB.projects, ...DB.events, ...DB.achievements].filter((x) => x.review && x.review.expertId === me().id && ['submitted', 'in_review', 'needs_info'].includes(x.status) && x.status !== 'needs_info').length : 0;
-  $('#side').innerHTML = `<a class="brand" href="#home">${brandMark()}<span><b>JASTAR HUB</b><small>Молодёжный совет группы «Самрук-Энерго»</small></span></a>
+  $('#side').innerHTML = `<a class="brand" href="#home">${brandMark()}<span><b>JASTAR HUB</b><small>${esc(BRAND.sidebar)}</small></span></a>
     <nav aria-label="Основная навигация">${NAV.map((grp) => {
       const items = grp.items.filter(([, , show]) => !show || show());
       if (!items.length) return '';
@@ -2803,9 +2916,19 @@ function pcard(p) {
   const team = (p.team || []).slice(0, 4).map((x) => avatar(U(x.userId), 26)).join('');
   const q = qProject(p);
   return `<a class="pcard" href="#project-${p.id}">
-    <div class="cover" style="--c:${c.color}">${cover ? `<img alt="" data-media="${cover.key}">` : `<span class="cv-ic">${icon(c.icon, 30)}</span>`}<span class="cv-top">${catChip(p.category)}${p.status !== 'confirmed' ? statusChip(p.status) : `<span class="score-b" title="Качество проекта по оценке эксперта, из 10">${fmt1(q)}</span>`}</span></div>
+    <div class="cover" style="--c:${c.color}">${cover ? `<img alt="" data-media="${cover.key}">` : `<span class="cv-ic">${icon(c.icon, 30)}</span>`}<span class="cv-top">${catChip(p.category)}${p.status !== 'confirmed' ? statusChip(p.status, p) : `<span class="score-b" title="Качество проекта по оценке эксперта, из 10">${fmt1(q)}</span>`}</span></div>
     <div class="pc-b"><h3>${esc(p.title)}</h3><p class="meta">${esc(orgLabel(p.orgId))} · ${esc((RG(p.regionId) || {}).city || '')}</p><p class="desc">${esc(p.desc)}</p>
-    <div class="pc-f"><span class="stack">${team}</span><span class="muted">${fmtDate(p.end)}</span><span class="muted" title="Охват">${icon('users', 14)} ${fmt(verifiedReach(p))}</span></div></div></a>`;
+    <div class="pc-f"><span class="stack">${team}</span><span class="muted">${p.status === 'planned' ? fmtDate(p.start) + ' — ' + fmtDate(p.end) : fmtDate(p.end)}</span>${p.status === 'planned' ? `<span class="muted" title="Участников">${icon('users', 14)} ${fmt(p.participants)}</span>` : `<span class="muted" title="Охват">${icon('users', 14)} ${fmt(verifiedReach(p))}</span>`}</div></div></a>`;
+}
+/* Показательная версия: ключевые проекты года и текущие проекты */
+function planBlock() {
+  if (!VARIANT || !VARIANT.showcase) return '';
+  const y = String(VARIANT.showcase.year);
+  const plan = DB.projects.filter((p) => p.status === 'planned' && p.start > todayISO()).sort((a, b) => ((b.partnerOrgIds || []).length - (a.partnerOrgIds || []).length) || a.start.localeCompare(b.start));
+  const cur = DB.projects.filter((p) => p.status === 'planned' && p.start <= todayISO());
+  const ev = DB.events.filter((e) => e.status === 'planned' && e.date.startsWith(y)).length;
+  return card(`План на ${y} год`, `<div class="plan-kpis"><span><b>${fmt(cur.length)}</b>текущих проектов</span><span><b>${fmt(plan.length)}</b>проектов в плане</span><span><b>${fmt(ev)}</b>мероприятий в ${y} году</span></div><div class="pgrid">${plan.slice(0, 6).map(pcard).join('')}</div>`,
+    `<a class="lnk" href="#projects" data-act="go-plan">Все планы${icon('chevR', 14)}</a>`);
 }
 function eventRow(e) {
   const d = new Date(e.date + 'T12:00:00');
@@ -2851,7 +2974,7 @@ route('home', () => {
   return `<div class="page home">
   <section class="hero">
     <div class="hero-main">
-      <span class="eyebrow">Единая цифровая платформа Молодёжного совета группы компаний АО «Самрук-Энерго»</span>
+      <span class="eyebrow">${esc(BRAND.heroEyebrow)}</span>
       <h1 class="wordmark">JASTAR HUB</h1>
       <p class="slogan-l">${esc(t('slogan'))}</p>
       <p class="lead">Профили молодых сотрудников, проекты и мероприятия советов, независимая экспертиза и открытые рейтинги, в которых баллы начисляются только за подтверждённые результаты.</p>
@@ -2860,7 +2983,7 @@ route('home', () => {
   </section>
   <div class="kpis k4">
     ${kpi('Молодых сотрудников в системе', fmt(young), 'до 35 лет · тестовая численность', 'users')}
-    ${kpi('Дочерних организаций', fmt(DB.orgs.filter((o) => o.type === 'portfolio').length), (() => { const n = DB.orgs.filter((o) => o.type === 'subsidiary').length; return `корпоративный центр и ${n} ${plural(n, 'филиал', 'филиала', 'филиалов')}`; })(), 'building')}
+    ${kpi(BRAND.kpiPortfolio, fmt(DB.orgs.filter((o) => o.type === 'portfolio').length), (() => { const n = DB.orgs.filter((o) => o.type === 'subsidiary').length; return BRAND.id === 'sk' ? `фонд и ${n} ДЗО` : `корпоративный центр и ${n} ${plural(n, 'филиал', 'филиала', 'филиалов')}`; })(), 'building')}
     ${kpi('Молодёжных советов', fmt(DB.orgs.length), (() => { const n = uniq(DB.orgs.map((o) => o.regionId)).length; return `${n} ${plural(n, 'регион', 'региона', 'регионов')} присутствия`; })(), 'flag')}
     ${kpi('Реализованных проектов', fmt(conf.length), 'подтверждены экспертами', 'folder')}
     ${kpi('Мероприятий', fmt(DB.events.length), `${upcoming.length} предстоящих`, 'calendar')}
@@ -2876,6 +2999,7 @@ route('home', () => {
     ${card('Динамика подтверждённой активности', chart('line', { labels: ms.map((m) => m.label), series: [{ name: 'Проекты', values: byMonth(conf, (p) => p.end) }, { name: 'Мероприятия', values: byMonth(confEv, (e) => e.date) }], h: 240 }), '<span class="muted sm">12 месяцев</span>')}
     ${card('Проекты по направлениям', hbars(catRows))}
   </div>
+  ${planBlock()}
   ${card('Лучшие проекты месяца', best.length ? `<div class="pgrid">${best.map(pcard).join('')}</div>` : emptyState('folder', 'Пока нет подтверждённых проектов за месяц', 'Они появятся после проверки экспертом.'), `<a class="lnk" href="#projects">Все проекты ${icon('chevR', 14)}</a>`)}
   <div class="grid g3">
     ${card('ТОП-5 сотрудников', `<ol class="toplist">${people.map((r) => { const x = U(r.userId); return `<li><span class="rk">${r.rank}</span><a href="#person-${x.id}" class="tl-m">${avatar(x, 34)}<span><b>${esc(x.name)}</b><small>${esc(orgLabel(x.companyId))}</small></span></a><b class="tl-v">${fmt1(r.total)}</b></li>`; }).join('')}</ol>`, `<a class="lnk" href="#leaders">ТОП-100 ${icon('chevR', 14)}</a>`)}
@@ -2884,6 +3008,7 @@ route('home', () => {
   </div>
   </div>`;
 });
+ACTIONS['go-plan'] = () => { UI.pr = { ...(UI.pr || {}), scope: 'plan', limit: 24 }; go('projects'); };
 ACTIONS['map-region'] = (el) => { UI.pr = { ...(UI.pr || {}), region: el.dataset.id, limit: 24 }; go('projects'); };
 
 /* ============================ КОМПАНИИ ============================ */
@@ -2900,10 +3025,10 @@ route('companies', () => {
   else { const ord = new Map(orgTree().map((o, i) => [o.id, i])); list.sort((a, b) => ord.get(a.id) - ord.get(b.id)); }
   const parents = DB.orgs.filter((o) => o.type === 'portfolio');
   return `<div class="page">
-  ${pageHead(t('companies'), 'Корпоративный центр, дочерние и зависимые организации группы АО «Самрук-Энерго», их филиалы и Молодёжные советы', can('company.edit') && myRole() === 'admin' ? `<a class="btn" href="#admin">${icon('plus', 16)}Добавить организацию</a>` : '')}
+  ${pageHead(t('companies'), BRAND.companiesLead, can('company.edit') && myRole() === 'admin' ? `<a class="btn" href="#admin">${icon('plus', 16)}Добавить организацию</a>` : '')}
   <div class="filters">
     <div class="f-search">${icon('search', 16)}<input id="co-q" type="search" placeholder="Название организации или отрасль" value="${esc(f.q)}" data-live="co.q"></div>
-    ${seg('co.type', [['', 'Все'], ['portfolio', 'Корпоративный центр и ДЗО'], ['subsidiary', 'Филиалы']], f.type)}
+    ${seg('co.type', [['', 'Все'], ['portfolio', BRAND.types.fund + ' и ' + BRAND.typesPlural.portfolio], ['subsidiary', BRAND.typesPlural.subsidiary]], f.type)}
     ${sel('co-parent', [['', 'Все организации'], ...parents.map((o) => [o.id, groupName(o)])], f.parent, 'data-live="co.parent"')}
     ${sel('co-region', regionOptions('Все регионы'), f.region, 'data-live="co.region"')}
     ${sel('co-sort', [['structure', 'По структуре группы'], ['rating', 'По месту в рейтинге']], f.sort, 'data-live="co.sort" aria-label="Порядок"')}
@@ -3295,7 +3420,7 @@ route('register', () => {
       ${fld('Корпоративный e-mail', inp('email', d.email || '', 'type="email" required autocomplete="email"'), '', true)}
       ${fld('Пароль', inp('password', '', 'type="password" required minlength="8" autocomplete="new-password"'), 'Не короче 8 символов', true)}
       <label class="check"><input type="checkbox" name="consent" ${d.consent ? 'checked' : ''} required><span>Даю согласие на сбор и обработку персональных данных в соответствии с Законом РК «О персональных данных и их защите»</span></label>
-      <label class="check"><input type="checkbox" name="age" ${d.age ? 'checked' : ''} required><span>Мне 35 лет или меньше, я работаю в корпоративном центре или дочерней организации АО «Самрук-Энерго»</span></label>`;
+      <label class="check"><input type="checkbox" name="age" ${d.age ? 'checked' : ''} required><span>${esc(BRAND.ageCheck)}</span></label>`;
   } else if (R.step === 2) {
     const roots = DB.orgs.filter((o) => o.type !== 'subsidiary');
     const root = d.root || '';
@@ -3356,20 +3481,26 @@ route('projects', () => {
   const f = (UI.pr = { q: '', cat: '', root: '', region: '', scope: 'confirmed', sort: 'new', limit: 24, ...(UI.pr || {}) });
   const u = me();
   let list = DB.projects.filter(canSeeActivity);
-  if (f.scope === 'confirmed' || !u) list = list.filter((p) => p.status === 'confirmed');
+  if (!u && !['confirmed', 'current', 'plan'].includes(f.scope)) f.scope = 'confirmed';
+  if (f.scope === 'confirmed') list = list.filter((p) => p.status === 'confirmed');
+  if (f.scope === 'current') list = list.filter((p) => p.status === 'planned' && p.start <= todayISO());
+  if (f.scope === 'plan') list = list.filter((p) => p.status === 'planned' && p.start > todayISO());
   if (f.scope === 'mine' && u) list = list.filter((p) => p.createdBy === u.id || p.leaderId === u.id || p.team.some((x) => x.userId === u.id));
-  if (f.scope === 'review' && u) list = list.filter((p) => p.status !== 'confirmed');
+  if (f.scope === 'review' && u) list = list.filter((p) => !['confirmed', 'planned'].includes(p.status));
   if (f.q) list = list.filter((p) => norm(p.title + ' ' + p.desc + ' ' + orgLabel(p.orgId)).includes(norm(f.q)));
   if (f.cat) list = list.filter((p) => p.category === f.cat);
   if (f.root) list = list.filter((p) => rootOf(p.orgId) === f.root || (p.partnerOrgIds || []).some((x) => rootOf(x) === f.root));
   if (f.region) list = list.filter((p) => p.regionId === f.region);
   if (f.sort === 'score') list.sort((a, b) => qProject(b) - qProject(a));
   else if (f.sort === 'reach') list.sort((a, b) => verifiedReach(b) - verifiedReach(a));
+  else if (f.scope === 'plan') list.sort((a, b) => a.start.localeCompare(b.start));
   else list.sort((a, b) => b.end.localeCompare(a.end));
   const shown = list.slice(0, f.limit);
-  const scopes = u ? [['confirmed', 'Подтверждённые'], ['all', 'Все доступные'], ['review', 'На проверке и черновики'], ['mine', 'Мои']] : [['confirmed', 'Подтверждённые']];
+  const hasPlan = DB.projects.some((p) => p.status === 'planned');
+  const planScopes = hasPlan ? [['current', 'Текущие'], ['plan', 'Запланированные']] : [];
+  const scopes = u ? [['confirmed', 'Подтверждённые'], ...planScopes, ['all', 'Все доступные'], ['review', 'На проверке и черновики'], ['mine', 'Мои']] : [['confirmed', 'Подтверждённые'], ...planScopes];
   return `<div class="page">
-    ${pageHead(t('projects'), 'Проекты и инициативы Молодёжных советов. Гости видят только подтверждённые экспертами проекты.', can('project.create') ? `<a class="btn primary" href="#project-new" data-act="project-new">${icon('plus', 16)}Добавить проект</a>` : '')}
+    ${pageHead(t('projects'), hasPlan ? 'Реализованные, текущие и запланированные проекты Молодёжных советов. В рейтинг идут только проекты, подтверждённые экспертами.' : 'Проекты и инициативы Молодёжных советов. Гости видят только подтверждённые экспертами проекты.', can('project.create') ? `<a class="btn primary" href="#project-new" data-act="project-new">${icon('plus', 16)}Добавить проект</a>` : '')}
     <div class="filters">
       <div class="f-search">${icon('search', 16)}<input id="pr-q" type="search" placeholder="Название, описание или компания" value="${esc(f.q)}" data-live="pr.q"></div>
       ${sel('pr-cat', catOptions('Все направления'), f.cat, 'data-live="pr.cat"')}
@@ -3377,7 +3508,7 @@ route('projects', () => {
       ${sel('pr-region', regionOptions('Все регионы'), f.region, 'data-live="pr.region"')}
       ${sel('pr-sort', [['new', 'Сначала новые'], ['score', 'По оценке эксперта'], ['reach', 'По охвату']], f.sort, 'data-live="pr.sort" aria-label="Сортировка"')}
     </div>
-    ${u ? seg('pr.scope', scopes, f.scope) : ''}
+    ${u || hasPlan ? seg('pr.scope', scopes, f.scope) : ''}
     <p class="count">${list.length} ${plural(list.length, 'проект', 'проекта', 'проектов')}${f.region ? ` · ${esc(RG(f.region).name)} <button class="lnk" data-act="clear" data-k="pr.region">сбросить регион</button>` : ''}</p>
     ${shown.length ? `<div class="pgrid">${shown.map(pcard).join('')}</div>` : emptyState('folder', 'Проектов по этим условиям нет', 'Измените фильтры или добавьте свой проект.')}
     ${list.length > shown.length ? `<div class="more"><button class="btn" data-act="more" data-k="pr">Показать ещё</button></div>` : ''}
@@ -3406,7 +3537,7 @@ route('project', (id) => {
     <nav class="crumbs"><a href="#projects">${esc(t('projects'))}</a> / <span>${esc(p.title)}</span></nav>
     <header class="proj-h" style="--c:${c.color}">
       <div class="proj-cover">${photo ? `<img alt="" data-media="${photo.key}">` : icon(c.icon, 40)}</div>
-      <div class="grow"><div class="chips">${catChip(p.category)}${statusChip(p.status)}${partners.length ? chip('Межкорпоративный', 'accent', 'link') : ''}${appeal ? chip('Апелляция на рассмотрении', 'warn') : ''}${p.demo ? testChip() : ''}</div>
+      <div class="grow"><div class="chips">${catChip(p.category)}${statusChip(p.status, p)}${partners.length ? chip('Межкорпоративный', 'accent', 'link') : ''}${appeal ? chip('Апелляция на рассмотрении', 'warn') : ''}${p.demo ? testChip() : ''}</div>
         <h1>${esc(p.title)}</h1>
         <p class="sub">${orgLink(p.companyId)}${p.orgId !== p.companyId ? ` · ${orgLink(p.orgId)}` : ''} · ${esc((RG(p.regionId) || {}).name)} · ${fmtDate(p.start)} — ${fmtDate(p.end)}</p></div>
       <div class="btn-row">
@@ -3769,11 +3900,11 @@ route('rating', () => {
   const pod = (r, cls) => r ? `<a class="pod ${cls}" href="#company-${r.orgId}"><span class="pod-n">${r.rank}</span>${orgLogo(O(r.orgId), 52)}<b>${esc(O(r.orgId).name)}</b><span class="pod-s">${fmt1(r.total)}<small> баллов</small></span><span class="pod-m">${pct(r.engagement)} вовлечённость · ${r.activities} ${plural(r.activities, 'активность', 'активности', 'активностей')}</span></a>` : '';
   const pLabel = PERIODS.find((p) => p.id === f.period).label.toLowerCase();
   return `<div class="page">
-    ${pageHead('ТОП Молодёжных советов группы «Самрук-Энерго»', `Баллы из 100 по открытой методике. Учитываются только подтверждённые экспертами активности, показатели нормированы по численности молодёжи. ${testChip()}`, `<button class="btn ghost" data-act="rt-export">${icon('download', 16)}Excel</button><a class="btn ghost" href="#methodology">${icon('scale', 16)}Методика</a>`, 'Рейтинг')}
+    ${pageHead('ТОП Молодёжных советов ' + BRAND.groupOf, `Баллы из 100 по открытой методике. Учитываются только подтверждённые экспертами активности, показатели нормированы по численности молодёжи. ${testChip()}`, `<button class="btn ghost" data-act="rt-export">${icon('download', 16)}Excel</button><a class="btn ghost" href="#methodology">${icon('scale', 16)}Методика</a>`, 'Рейтинг')}
     <div class="filters">${seg('rt.period', PERIODS.map((p) => [p.id, p.label]), f.period)}
       ${sel('rt-region', regionOptions('Все регионы'), f.region, 'data-live="rt.region"')}
       ${sel('rt-cat', catOptions('Все категории деятельности'), f.cat, 'data-live="rt.cat"')}
-      ${sel('rt-level', [['all', 'Каждый совет отдельно'], ['groups', 'ДЗО вместе с филиалами']], f.level, 'data-live="rt.level" aria-label="Уровень рейтинга"')}</div>
+      ${sel('rt-level', [['all', 'Каждый совет отдельно'], ['groups', BRAND.groupLevel]], f.level, 'data-live="rt.level" aria-label="Уровень рейтинга"')}</div>
     ${top3.length ? `<div class="podium">${pod(top3[1], 'p2')}${pod(top3[0], 'p1')}${pod(top3[2], 'p3')}</div>` : ''}
     ${card('', `<div class="tbl-wrap"><table class="tbl rating"><thead><tr><th class="num">Место</th><th>Изм.</th><th>Молодёжный совет</th><th class="num">Баллы</th><th class="num">Подтв. активностей</th><th class="num">Охват</th><th class="num">Проектов</th><th>Динамика места</th><th></th></tr></thead><tbody>
       ${shown.map((r) => { const o = O(r.orgId); const h = rankHistory(r.orgId, f.level); return `<tr class="${f.open === r.orgId ? 'open' : ''} ${r.rank <= 3 && r.total > 0 ? 'top' : ''}"><td class="num"><b class="rk">${r.rank}</b></td><td>${f.period === 'all' && !prev.size ? '' : delta(prev.get(r.orgId), r.rank)}</td><td><a class="tcell" href="#company-${o.id}">${orgLogo(o, 30)}<span><b>${esc(o.name)}</b><small>${esc(orgTypeLabel(o))} · ${fmt(r.size)} молодых</small></span></a></td><td class="num"><span class="sc">${bar(r.total)}<b>${fmt1(r.total)}</b></span></td><td class="num">${r.activities}</td><td class="num" title="Доля охваченных молодых сотрудников">${pct(r.engagement)}</td><td class="num">${r.projects}</td><td>${sparkline(h.map((x) => x.rank))}</td><td><button class="icon-btn" data-act="rt-open" data-id="${r.orgId}" aria-expanded="${f.open === r.orgId}" aria-label="Разбивка баллов">${icon('chevD', 16)}</button></td></tr>
@@ -3797,7 +3928,7 @@ route('leaders', () => {
   const prev = prevRanks(personScores, opt, f.period);
   const pod = (r, cls) => { if (!r) return ''; const u = U(r.userId); return `<a class="pod ${cls}" href="#person-${u.id}"><span class="pod-n">${r.rank}</span>${avatar(u, 56)}<b>${esc(u.name)}</b><span class="pod-m">${esc(orgLabel(u.companyId))}</span><span class="pod-s">${fmt1(r.total)}<small> баллов</small></span></a>`; };
   return `<div class="page">
-    ${pageHead('ТОП-100 молодых лидеров группы «Самрук-Энерго»', `Индивидуальный рейтинг считает только личный вклад: долю участника в каждом подтверждённом проекте, руководство, инициативы и личные достижения. ${testChip()}`, `<button class="btn ghost" data-act="ld-export">${icon('download', 16)}Excel</button>`, 'Рейтинг')}
+    ${pageHead('ТОП-100 молодых лидеров ' + BRAND.groupOf, `Индивидуальный рейтинг считает только личный вклад: долю участника в каждом подтверждённом проекте, руководство, инициативы и личные достижения. ${testChip()}`, `<button class="btn ghost" data-act="ld-export">${icon('download', 16)}Excel</button>`, 'Рейтинг')}
     <div class="filters">${seg('ld.period', PERIODS.map((p) => [p.id, p.label]), f.period)}
       ${sel('ld-root', rootOptions('Все организации'), f.root, 'data-live="ld.root"')}
       ${sel('ld-region', regionOptions('Все регионы'), f.region, 'data-live="ld.region"')}</div>
@@ -4114,7 +4245,7 @@ function reportHTML(q) {
   const people = personScores(range).filter((r) => r.total > 0 && (A.sc.orgIds.has(U(r.userId).companyId)) && (!A.sc.region || U(r.userId).regionId === A.sc.region)).slice(0, 10);
   const rows = (arr) => arr.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('');
   return `<div class="report" id="report-node">
-    <div class="rp-h"><div>${brandMark(36)}</div><div><b>JASTAR HUB</b><span>Квартальный отчёт о деятельности Молодёжного совета группы компаний АО «Самрук-Энерго»</span></div></div>
+    <div class="rp-h"><div>${brandMark(36)}</div><div><b>JASTAR HUB</b><span>Квартальный отчёт о деятельности Молодёжных советов ${esc(BRAND.groupOf)}</span></div></div>
     <h2>${esc(q.label)} · ${esc(A.sc.label)}</h2>
     <p class="rp-warn">ТЕСТОВЫЕ ДАННЫЕ ДЕМО-ВЕРСИИ. Отчёт сформирован автоматически ${fmtDT(new Date().toISOString())}. Показатели не являются официальными.</p>
     <h3>Ключевые показатели</h3>
@@ -4359,7 +4490,7 @@ const LIVE_CFG = {
   /* публичный ключ: предназначен для браузера, доступ ограничен правилами RLS в базе */
   key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVocndkY2FhZXl0cHZtZ3JqZmFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2NTQxODAsImV4cCI6MjEwOTIzMDE4MH0.Fp9drHq2Z_MHUoUALn_uI7IgpfEhyl0Z_Tb_vgOa__0'
 };
-const LIVE_EXPECTED = !!LIVE_CFG.url && !window.claude && (/^https?:$/.test(location.protocol) || !!window.__JASTAR_FORCE_LIVE);
+const LIVE_EXPECTED = !!LIVE_CFG.url && !window.claude && !window.__JASTAR_FORCE_DEMO && (/^https?:$/.test(location.protocol) || !!window.__JASTAR_FORCE_LIVE);
 const LIVE = LIVE_EXPECTED && !!(window.supabase && window.supabase.createClient);
 let sb = null;
 let LAST_LOAD = 0;
@@ -4965,7 +5096,7 @@ const FB_STATUS = {
 };
 const FB_SECTIONS = ['Главная', 'Организации и советы', 'Личный кабинет', 'Проекты', 'Мероприятия', 'Рейтинги', 'Экспертиза', 'Новости и база знаний', 'Аналитика', 'Регистрация и вход', 'Другое'];
 const CONTACT_FIELDS = [
-  ['org', 'Организация', 'building', 'Например: Молодёжный совет АО «Самрук-Энерго»'],
+  ['org', 'Организация', 'building', BRAND.contactsExample],
   ['person', 'Ответственный за платформу', 'user', 'ФИО и должность'],
   ['email', 'E-mail', 'mail', 'name@company.kz'],
   ['phone', 'Телефон', 'phone', '+7 …'],
@@ -5271,11 +5402,12 @@ const ORG_KINDS = {
   service: { name: 'Сервис', icon: 'settings' },
   project: { name: 'Строительство ТЭЦ', icon: 'crane' }
 };
+if (VARIANT && VARIANT.kinds) Object.assign(ORG_KINDS, VARIANT.kinds);
 const KIND_TONE = { thermal: 's2', hydro: 's3', res: 's1' };
 const VAC_KINDS = { job: 'Вакансия', intern: 'Стажировка', program: 'Программа развития' };
 const nfCap = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 });
 const prof = (o) => (o && o.profile) || {};
-const kindOf = (o) => prof(o).kind || (o && o.type === 'fund' ? 'center' : 'service');
+const kindOf = (o) => prof(o).kind || (o && o.type === 'fund' ? (BRAND.id === 'sk' ? 'fund' : 'center') : 'service');
 const capLabel = (p) => p.capText || [p.mw != null ? nfCap.format(p.mw) + ' МВт' : '', p.gcal != null ? nfCap.format(p.gcal) + ' Гкал/ч' : ''].filter(Boolean).join(' · ');
 const siteUrl = (s) => 'https://' + String(s || '').replace(/^https?:\/\//i, '').replace(/\/+$/, '');
 const extLink = (href, label, cls = 'lnk') => `<a class="${cls}" href="${esc(href)}" target="_blank" rel="noopener">${esc(label)}${icon('ext', 13)}</a>`;
@@ -5364,7 +5496,7 @@ function acard(o) {
   const p = prof(o); const k = ORG_KINDS[kindOf(o)] || ORG_KINDS.service;
   return `<article class="acard ${o.type === 'subsidiary' ? 'branch' : ''}" id="asset-${o.id}">
     <header class="ac-h">${orgLogo(o, 40)}<span><a href="#company-${o.id}"><b>${esc(o.name)}</b></a><small>${esc(o.full)}</small></span></header>
-    <div class="chips">${chip(k.name, '', k.icon)}${o.type === 'subsidiary' ? chip('Филиал ' + orgLabel(o.parentId)) : ''}${p.holding === 'qgp' ? chip('Периметр QGP', 'accent') : ''}${p.check ? chip('Описание уточняется', 'warn', 'info') : ''}</div>
+    <div class="chips">${chip(k.name, '', k.icon)}${o.type === 'subsidiary' ? chip(BRAND.types.subsidiary + ' · ' + orgLabel(o.parentId)) : ''}${p.holding === 'qgp' ? chip('Периметр QGP', 'accent') : ''}${p.check ? chip('Описание уточняется', 'warn', 'info') : ''}</div>
     <p class="ac-what">${esc(p.what || o.sector || '')}</p>
     ${assetFacts(o)}
     ${assetObjects(p)}
@@ -5406,19 +5538,24 @@ route('assets', () => {
   const totalMW = sum(withMW, (o) => prof(o).mw);
   const projects = orgs.filter((o) => kindOf(o) === 'project');
   const regions = uniq(orgs.map((o) => o.regionId)).length;
-  const groups = [['', 'Все'], ['thermal', 'Тепловая генерация'], ['hydro', 'ГЭС'], ['res', 'Ветер и солнце'], ['grid', 'Сети и сбыт'], ['project', 'Новые ТЭЦ'], ['mgmt', 'Управление и сервис']];
+  const SKV = BRAND.id === 'sk';
+  const groups = SKV ? [['', 'Все'], ...Object.entries(VARIANT.kinds).filter(([k]) => k !== 'fund' && orgs.some((o) => kindOf(o) === k)).map(([k, v]) => [k, v.name])]
+    : [['', 'Все'], ['thermal', 'Тепловая генерация'], ['hydro', 'ГЭС'], ['res', 'Ветер и солнце'], ['grid', 'Сети и сбыт'], ['project', 'Новые ТЭЦ'], ['mgmt', 'Управление и сервис']];
+  const youngSum = sum(orgs, (o) => o.young || 0);
   const q = norm(F.q);
   const list = orgs.filter((o) => {
     const k = kindOf(o);
     if (F.k === 'mgmt' ? !['center', 'holding', 'service'].includes(k) : F.k && k !== F.k) return false;
     return !q || norm([o.name, o.full, prof(o).what, prof(o).city, (prof(o).objects || []).join(' ')].join(' ')).includes(q);
   });
-  return `<div class="page">${pageHead(t('assets'), 'Какие компании входят в группу АО «Самрук-Энерго», чем они занимаются, где работают и сколько в них людей.', '<a class="btn" href="#structure">' + icon('tree', 16) + 'Оргструктура</a>')}
-    <div class="kpis k4">${kpi('Организаций в группе', fmt(orgs.length), `корпоративный центр, ${dzo} ДЗО и ${subs} ${plural(subs, 'филиал', 'филиала', 'филиалов')}`, 'building')}${kpi('Установленная мощность', `${fmt(totalMW)} <small>МВт</small>`, `электрическая, по ${withMW.length} ${plural(withMW.length, 'компании', 'компаниям', 'компаниям')}`, 'bolt')}${kpi('Регионов присутствия', fmt(regions), 'по месту организаций', 'pin')}${kpi('Новые ТЭЦ', fmt(projects.length), 'строятся, ввод — 2029 год', 'crane')}</div>
+  const kpisSK = `<div class="kpis k4">${kpi('Организаций в группе', fmt(orgs.length), `фонд, ${dzo} портфельных компаний и ${subs} ДЗО`, 'building')}${kpi('Портфельных компаний', fmt(dzo), 'с собственными Молодёжными советами', 'flag')}${kpi('Регионов присутствия', fmt(regions), 'по месту организаций', 'pin')}${kpi('Молодёжи до 35 лет', fmt(youngSum), 'тестовая численность', 'users')}</div>`;
+  const readSK = card('Как читать раздел', `<ul class="ticks"><li><b>Чем занимается</b> — краткое обзорное описание компании.</li><li><b>Персонал</b> — общая численность работников, её вносит председатель совета или администратор.</li><li><b>Молодёжь до 35 лет</b> — база для нормирования рейтинга советов. В показательной версии цифры тестовые.</li><li><b>Портфельная компания вместе с ДЗО</b> — так считается групповой рейтинг.</li></ul>`);
+  return `<div class="page">${pageHead(t('assets'), `Какие компании входят в группу ${BRAND.holding}, чем они занимаются, где работают и сколько в них людей.`, '<a class="btn" href="#structure">' + icon('tree', 16) + 'Оргструктура</a>')}
+    ${SKV ? kpisSK + readSK : `<div class="kpis k4">${kpi('Организаций в группе', fmt(orgs.length), `корпоративный центр, ${dzo} ДЗО и ${subs} ${plural(subs, 'филиал', 'филиала', 'филиалов')}`, 'building')}${kpi('Установленная мощность', `${fmt(totalMW)} <small>МВт</small>`, `электрическая, по ${withMW.length} ${plural(withMW.length, 'компании', 'компаниям', 'компаниям')}`, 'bolt')}${kpi('Регионов присутствия', fmt(regions), 'по месту организаций', 'pin')}${kpi('Новые ТЭЦ', fmt(projects.length), 'строятся, ввод — 2029 год', 'crane')}</div>
     <div class="grid g-2-1">
       ${card('Установленная электрическая мощность, МВт', capacityBars(orgs))}
       ${card('Как читать раздел', `<ul class="ticks"><li><b>Чем занимается</b> — по открытым данным сайта samruk-energy.kz и СМИ; ссылка на источник — внизу карточки. Пометка «уточняется» — описание ждёт проверки.</li><li><b>Персонал</b> — общая численность работников. Её вносит председатель совета организации или администратор, пока она не указана — «уточняется».</li><li><b>Молодёжь до 35 лет</b> — база для нормирования рейтинга советов, её уточняет администратор.</li><li><b>Периметр QGP</b> — гидро- и ВИЭ-активы, переданные в Qazaq Green Power PLC.</li></ul>`)}
-    </div>
+    </div>`}
     <div class="filters">${seg('as.k', groups, F.k)}<div class="f-search">${icon('search', 16)}<input id="as-q" type="search" placeholder="Компания, город или объект" value="${esc(F.q)}" data-live="as.q" aria-label="Поиск по активам"></div></div>
     <p class="count">${list.length} ${plural(list.length, 'организация', 'организации', 'организаций')}</p>
     ${list.length ? `<div class="agrid">${list.map(acard).join('')}</div>` : emptyState('search', 'Ничего не нашли', 'Измените направление или запрос.')}
@@ -5471,7 +5608,7 @@ ACTIONS['asset-edit'] = (el) => {
 function ocNode(o, cls = '') {
   const p = prof(o); const k = ORG_KINDS[kindOf(o)] || ORG_KINDS.service;
   const kids = childrenOf(o.id);
-  return `<div class="oc-item"><a class="oc-node ${cls} ${o.type}" href="#company-${o.id}">${orgLogo(o, 30)}<span><b>${esc(o.name)}</b><small>${esc(o.type === 'subsidiary' ? 'Филиал' : capLabel(p) || k.name)}</small></span></a>${kids.length ? `<div class="oc-kids">${kids.map((x) => ocNode(x)).join('')}</div>` : ''}</div>`;
+  return `<div class="oc-item"><a class="oc-node ${cls} ${o.type}" href="#company-${o.id}">${orgLogo(o, 30)}<span><b>${esc(o.name)}</b><small>${esc(o.type === 'subsidiary' ? BRAND.types.subsidiary : capLabel(p) || k.name)}</small></span></a>${kids.length ? `<div class="oc-kids">${kids.map((x) => ocNode(x)).join('')}</div>` : ''}</div>`;
 }
 function orgChart() {
   const head = O(headId());
@@ -5497,6 +5634,11 @@ function orgChart() {
   if (other.length) cols.push(col('building', 'Другие организации', other.map((o) => ocNode(o)).join(''), other.length));
   return `<div class="orgchart"><div class="oc-root">${head ? ocNode(head, 'root') : ''}</div><div class="oc-cols n${cols.length}">${cols.join('')}</div></div>`;
 }
+function skChart() {
+  const head = O(headId());
+  const pcs = DB.orgs.filter((o) => o.type === 'portfolio');
+  return `<div class="orgchart"><div class="oc-root solo">${head ? ocNode(head, 'root') : ''}</div><div class="oc-grid">${pcs.map((o) => `<section class="oc-pc">${ocNode(o, 'hold')}</section>`).join('')}</div></div>`;
+}
 function councilStructure() {
   const head = O(headId());
   const hm = head ? councilMembers(head.id).filter((u) => u.verified) : [];
@@ -5512,18 +5654,21 @@ function councilStructure() {
       <div class="cs-row">${chair ? pcard(chair, 'Председатель совета') : vacant('Председатель совета')}${deputies.length ? deputies.map((u) => pcard(u, 'Заместитель председателя')).join('') : vacant('Заместитель председателя')}${secretary.length ? secretary.map((u) => pcard(u, 'Секретарь')).join('') : vacant('Секретарь')}</div></section>
     <section class="cs-lvl"><h3>Региональные председатели <small>${regionals.length}</small></h3>
       ${regionals.length ? `<div class="cs-row">${regionals.map((u) => pcard(u, 'Региональный председатель', (RG(u.regionId) || {}).name || '—')).join('')}</div>` : '<p class="muted">Пока не назначены. Роль назначает администратор в разделе «Администрирование → Пользователи».</p>'}</section>
-    <section class="cs-lvl"><h3>Молодёжные советы ДЗО и филиалов <small>${councils.length}</small></h3>
+    <section class="cs-lvl"><h3>${BRAND.id === 'sk' ? 'Молодёжные советы портфельных компаний и ДЗО' : 'Молодёжные советы ДЗО и филиалов'} <small>${councils.length}</small></h3>
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Совет</th><th>Председатель</th><th class="num">В совете</th></tr></thead><tbody>${councils.map((o) => { const ch = U(o.council.chairId); return `<tr class="${o.type === 'subsidiary' ? 'sub' : ''}"><td><a class="tcell" href="#company-${o.id}">${orgLogo(o, 28)}<span><b>${o.type === 'subsidiary' ? '↳ ' : ''}${esc(o.name)}</b><small>${esc(orgTypeLabel(o))}</small></span></a></td><td>${ch ? `<a class="tcell" href="#person-${ch.id}">${avatar(ch, 26)}<span><b>${esc(ch.name)}</b></span></a>` : '<span class="muted">Не назначен</span>'}</td><td class="num">${fmt(councilMembers(o.id).filter((u) => u.verified).length)}</td></tr>`; }).join('')}</tbody></table></div></section>
   </div>`;
 }
 route('structure', () => {
   const tab = UI.tabs.st || 'group';
   const body = tab === 'group'
-    ? `${card('', orgChart())}
+    ? BRAND.id === 'sk' ? `${card('', skChart())}
+      <div class="grid g2">${card('Как устроена группа', `<dl class="dl1"><div><dt>Фонд</dt><dd>АО «Самрук-Қазына» управляет портфелем национальных компаний.</dd></div><div><dt>Портфельная компания</dt><dd>Национальная компания группы. У каждой свой Молодёжный совет, который объединяет советы её ДЗО.</dd></div><div><dt>ДЗО</dt><dd>Дочерняя или зависимая организация портфельной компании. У ДЗО может быть свой совет, в групповом рейтинге он считается вместе с портфельной компанией.</dd></div></dl>`)}
+        ${card('Как это связано с платформой', `<ul class="ticks"><li>Сотрудник при регистрации выбирает свою портфельную компанию и ДЗО.</li><li>Председатель совета портфельной компании подтверждает участников своей компании и её ДЗО.</li><li>Региональный председатель работает со всеми организациями своего региона.</li><li>Рейтинг ведётся по каждому совету и по портфельным компаниям вместе с ДЗО, с нормированием по численности молодёжи.</li></ul>`)}</div>`
+    : `${card('', orgChart())}
       <div class="grid g2">${card('Как устроена группа', `<dl class="dl1"><div><dt>Корпоративный центр</dt><dd>АО «Самрук-Энерго» управляет дочерними организациями и входит в группу АО «Самрук-Қазына».</dd></div><div><dt>ДЗО</dt><dd>Дочерняя или зависимая организация. У каждой ДЗО свой Молодёжный совет и своё место в рейтинге.</dd></div><div><dt>Филиал</dt><dd>Подразделение ДЗО. У филиала может быть свой совет, в рейтинге он считается вместе с ДЗО.</dd></div><div><dt>Периметр Qazaq Green Power</dt><dd>ГЭС и ВИЭ-активы, переданные в Qazaq Green Power PLC. На платформе это самостоятельные организации со своими советами.</dd></div></dl>`)}
         ${card('Как это связано с платформой', `<ul class="ticks"><li>Сотрудник при регистрации выбирает свою организацию и, если нужно, филиал.</li><li>Председатель ДЗО видит и подтверждает участников своей ДЗО и её филиалов.</li><li>Региональный председатель работает со всеми организациями своего региона.</li><li>Рейтинг ведётся по ДЗО вместе с филиалами, с нормированием по численности молодёжи.</li></ul>`)}</div>`
     : councilStructure();
-  return `<div class="page">${pageHead(t('structure'), 'Структура группы компаний АО «Самрук-Энерго» и Молодёжного совета. Нажмите на организацию, чтобы открыть её совет.', '<a class="btn" href="#assets">' + icon('factory', 16) + 'Активы группы</a>')}
+  return `<div class="page">${pageHead(t('structure'), `Структура группы компаний ${BRAND.holding} и Молодёжных советов. Нажмите на организацию, чтобы открыть её совет.`, '<a class="btn" href="#assets">' + icon('factory', 16) + 'Активы группы</a>')}
     ${tabs('tabs.st', [['group', 'Группа компаний'], ['council', 'Молодёжный совет']], tab)}${body}</div>`;
 });
 
@@ -5548,9 +5693,9 @@ route('vacancies', () => {
   if (F.kind) list = list.filter((v) => v.kind === F.kind);
   if (q) list = list.filter((v) => norm([v.title, v.city, v.description, orgLabel(v.orgId)].join(' ')).includes(q));
   const openN = vacList().filter(vacOpen).length;
-  const steps = [['Зарегистрируйтесь', 'Создайте профиль и резюме на Qsamruk.kz — один раз для всех компаний группы «Самрук-Қазына».'], ['Найдите вакансию', 'Отфильтруйте по компании: АО «Самрук-Энерго» и его дочерние организации.'], ['Откликнитесь', 'Отправьте отклик прямо на Qsamruk. Платформа JASTAR HUB резюме не принимает.'], ['Следите за статусом', 'Этапы отбора и приглашения приходят в личный кабинет Qsamruk.']];
-  return `<div class="page">${pageHead(t('vacancies'), 'Открытые позиции в компаниях группы АО «Самрук-Энерго». Отбор проходит на Qsamruk.kz — единой платформе подбора персонала группы «Самрук-Қазына».', manager ? `<button class="btn primary" data-act="vac-add">${icon('plus', 16)}Добавить вакансию</button>` : '')}
-    <section class="qs-hero"><div class="qs-t"><span class="eyebrow">Qsamruk.kz</span><h2>Все вакансии группы — в одном месте</h2><p>Вакансии АО «Самрук-Энерго» и дочерних организаций публикуются на Qsamruk. Там же — резюме, отклик и статус отбора. Ниже — подборка от Молодёжного совета.</p></div><div class="qs-a">${extLink(QSAMRUK_URL, 'Перейти на Qsamruk.kz', 'btn primary')}<small>Откроется в новой вкладке</small></div></section>
+  const steps = [['Зарегистрируйтесь', 'Создайте профиль и резюме на Qsamruk.kz — один раз для всех компаний группы «Самрук-Қазына».'], ['Найдите вакансию', BRAND.id === 'sk' ? 'Отфильтруйте по нужной компании группы и региону.' : 'Отфильтруйте по компании: АО «Самрук-Энерго» и его дочерние организации.'], ['Откликнитесь', 'Отправьте отклик прямо на Qsamruk. Платформа JASTAR HUB резюме не принимает.'], ['Следите за статусом', 'Этапы отбора и приглашения приходят в личный кабинет Qsamruk.']];
+  return `<div class="page">${pageHead(t('vacancies'), `Открытые позиции в компаниях группы ${BRAND.holding}. Отбор проходит на Qsamruk.kz — единой платформе подбора персонала группы «Самрук-Қазына».`, manager ? `<button class="btn primary" data-act="vac-add">${icon('plus', 16)}Добавить вакансию</button>` : '')}
+    <section class="qs-hero"><div class="qs-t"><span class="eyebrow">Qsamruk.kz</span><h2>Все вакансии группы — в одном месте</h2><p>${BRAND.id === 'sk' ? 'Вакансии фонда, портфельных компаний и их ДЗО' : 'Вакансии АО «Самрук-Энерго» и дочерних организаций'} публикуются на Qsamruk. Там же — резюме, отклик и статус отбора. Ниже — подборка от Молодёжного совета.</p></div><div class="qs-a">${extLink(QSAMRUK_URL, 'Перейти на Qsamruk.kz', 'btn primary')}<small>Откроется в новой вкладке</small></div></section>
     <ol class="qs-steps">${steps.map(([h, d], i) => `<li><b><span>${i + 1}</span>${esc(h)}</b><p>${esc(d)}</p></li>`).join('')}</ol>
     <div class="filters">${seg('vac.kind', [['', 'Все'], ...Object.entries(VAC_KINDS)], F.kind)}${sel('vac-org', rootOptions('Все организации'), F.org, 'data-live="vac.org" aria-label="Организация"')}<div class="f-search">${icon('search', 16)}<input id="vac-q" type="search" placeholder="Должность или город" value="${esc(F.q)}" data-live="vac.q" aria-label="Поиск вакансий"></div>${manager ? `<label class="check inline-check"><input type="checkbox" ${F.all ? 'checked' : ''} data-act-change="vac-all"><span>Показать закрытые</span></label>` : ''}</div>
     <p class="count">В подборке ${openN} ${plural(openN, 'открытая вакансия', 'открытые вакансии', 'открытых вакансий')}</p>
@@ -5616,13 +5761,13 @@ route('contacts', () => {
   const sites = orgTree().filter((o) => prof(o).site);
   const hp = prof(head);
   const councilPeople = [chair ? [chair, 'Председатель Молодёжного совета'] : null, ...deps.map((u) => [u, 'Заместитель председателя'])].filter(Boolean);
-  return `<div class="page">${pageHead(t('contacts'), 'К кому обратиться по платформе, Молодёжному совету и работе в группе «Самрук-Энерго».', `<a class="btn" href="#feedback">${icon('message', 16)}Написать обращение</a>${adm ? `<button class="btn primary" data-act="people-add">${icon('plus', 16)}Добавить контакт</button>` : ''}`)}
+  return `<div class="page">${pageHead(t('contacts'), `К кому обратиться по платформе, Молодёжным советам и работе в ${BRAND.groupOf.replace('группы', 'группе')}.`, `<a class="btn" href="#feedback">${icon('message', 16)}Написать обращение</a>${adm ? `<button class="btn primary" data-act="people-add">${icon('plus', 16)}Добавить контакт</button>` : ''}`)}
     <section><h2 class="sec-h">Ключевые контакты</h2>
       ${people.length ? `<div class="kpgrid">${people.map(keyPersonCard).join('')}</div>` : emptyState('user', 'Контакты не указаны', adm ? 'Добавьте руководителя проекта и администратора системы.' : 'Скоро здесь появятся контакты команды платформы.')}</section>
     <div class="grid g3">
-      ${card('Молодёжный совет', councilPeople.length ? councilPeople.map(([u, role]) => `<div class="cs-ct"><a class="person-s" href="#person-${u.id}">${avatar(u, 40)}<span><b>${esc(u.name)}</b><small>${esc(role)}</small></span></a>${personContacts(u) || '<p class="muted sm">Рабочие контакты не указаны в профиле</p>'}</div>`).join('') : '<p class="muted">Председатель совета пока не назначен.</p>', `<button class="lnk" data-act="go-councils">Контакты советов ДЗО${icon('chevR', 14)}</button>`)}
+      ${card('Молодёжный совет', councilPeople.length ? councilPeople.map(([u, role]) => `<div class="cs-ct"><a class="person-s" href="#person-${u.id}">${avatar(u, 40)}<span><b>${esc(u.name)}</b><small>${esc(role)}</small></span></a>${personContacts(u) || '<p class="muted sm">Рабочие контакты не указаны в профиле</p>'}</div>`).join('') : '<p class="muted">Председатель совета пока не назначен.</p>', `<button class="lnk" data-act="go-councils">Контакты советов${icon('chevR', 14)}</button>`)}
       ${contactsCard()}
-      ${card('Корпоративный центр', `<div class="contact-list">${hp.address ? `<div class="ct">${icon('pin', 18)}<span><small>Адрес</small><b>${esc(hp.address)}</b></span><span></span></div>` : ''}<div class="ct">${icon('globe', 18)}<span><small>Сайт</small><b>${extLink('https://samruk-energy.kz', 'samruk-energy.kz')}</b></span><span></span></div><div class="ct">${icon('briefcase', 18)}<span><small>Вакансии группы</small><b>${extLink(QSAMRUK_URL, 'qsamruk.kz')}</b></span><span></span></div><div class="ct">${icon('building', 18)}<span><small>Входит в группу</small><b>${extLink('https://sk.kz', 'АО «Самрук-Қазына»')}</b></span><span></span></div></div>`)}
+      ${card(BRAND.types.fund, `<div class="contact-list">${hp.address ? `<div class="ct">${icon('pin', 18)}<span><small>Адрес</small><b>${esc(hp.address)}</b></span><span></span></div>` : ''}<div class="ct">${icon('globe', 18)}<span><small>Сайт</small><b>${extLink('https://' + BRAND.site, BRAND.site)}</b></span><span></span></div><div class="ct">${icon('briefcase', 18)}<span><small>Вакансии группы</small><b>${extLink(QSAMRUK_URL, 'qsamruk.kz')}</b></span><span></span></div>${BRAND.parentGroup ? `<div class="ct">${icon('building', 18)}<span><small>Входит в группу</small><b>${extLink('https://sk.kz', BRAND.parentGroup)}</b></span><span></span></div>` : ''}</div>`)}
     </div>
     ${card('Сайты компаний группы', `<div class="site-grid">${sites.map((o) => `<a class="site-l" href="${esc(siteUrl(prof(o).site))}" target="_blank" rel="noopener">${orgLogo(o, 28)}<span class="st"><b>${esc(o.name)}</b><small>${esc(prof(o).site)}</small></span>${icon('ext', 14)}</a>`).join('')}</div>`, '<a class="lnk" href="#assets">Активы группы' + icon('chevR', 14) + '</a>')}
   </div>`;

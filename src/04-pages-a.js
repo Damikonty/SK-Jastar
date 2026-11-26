@@ -29,9 +29,19 @@ function pcard(p) {
   const team = (p.team || []).slice(0, 4).map((x) => avatar(U(x.userId), 26)).join('');
   const q = qProject(p);
   return `<a class="pcard" href="#project-${p.id}">
-    <div class="cover" style="--c:${c.color}">${cover ? `<img alt="" data-media="${cover.key}">` : `<span class="cv-ic">${icon(c.icon, 30)}</span>`}<span class="cv-top">${catChip(p.category)}${p.status !== 'confirmed' ? statusChip(p.status) : `<span class="score-b" title="Качество проекта по оценке эксперта, из 10">${fmt1(q)}</span>`}</span></div>
+    <div class="cover" style="--c:${c.color}">${cover ? `<img alt="" data-media="${cover.key}">` : `<span class="cv-ic">${icon(c.icon, 30)}</span>`}<span class="cv-top">${catChip(p.category)}${p.status !== 'confirmed' ? statusChip(p.status, p) : `<span class="score-b" title="Качество проекта по оценке эксперта, из 10">${fmt1(q)}</span>`}</span></div>
     <div class="pc-b"><h3>${esc(p.title)}</h3><p class="meta">${esc(orgLabel(p.orgId))} · ${esc((RG(p.regionId) || {}).city || '')}</p><p class="desc">${esc(p.desc)}</p>
-    <div class="pc-f"><span class="stack">${team}</span><span class="muted">${fmtDate(p.end)}</span><span class="muted" title="Охват">${icon('users', 14)} ${fmt(verifiedReach(p))}</span></div></div></a>`;
+    <div class="pc-f"><span class="stack">${team}</span><span class="muted">${p.status === 'planned' ? fmtDate(p.start) + ' — ' + fmtDate(p.end) : fmtDate(p.end)}</span>${p.status === 'planned' ? `<span class="muted" title="Участников">${icon('users', 14)} ${fmt(p.participants)}</span>` : `<span class="muted" title="Охват">${icon('users', 14)} ${fmt(verifiedReach(p))}</span>`}</div></div></a>`;
+}
+/* Показательная версия: ключевые проекты года и текущие проекты */
+function planBlock() {
+  if (!VARIANT || !VARIANT.showcase) return '';
+  const y = String(VARIANT.showcase.year);
+  const plan = DB.projects.filter((p) => p.status === 'planned' && p.start > todayISO()).sort((a, b) => ((b.partnerOrgIds || []).length - (a.partnerOrgIds || []).length) || a.start.localeCompare(b.start));
+  const cur = DB.projects.filter((p) => p.status === 'planned' && p.start <= todayISO());
+  const ev = DB.events.filter((e) => e.status === 'planned' && e.date.startsWith(y)).length;
+  return card(`План на ${y} год`, `<div class="plan-kpis"><span><b>${fmt(cur.length)}</b>текущих проектов</span><span><b>${fmt(plan.length)}</b>проектов в плане</span><span><b>${fmt(ev)}</b>мероприятий в ${y} году</span></div><div class="pgrid">${plan.slice(0, 6).map(pcard).join('')}</div>`,
+    `<a class="lnk" href="#projects" data-act="go-plan">Все планы${icon('chevR', 14)}</a>`);
 }
 function eventRow(e) {
   const d = new Date(e.date + 'T12:00:00');
@@ -77,7 +87,7 @@ route('home', () => {
   return `<div class="page home">
   <section class="hero">
     <div class="hero-main">
-      <span class="eyebrow">Единая цифровая платформа Молодёжного совета группы компаний АО «Самрук-Энерго»</span>
+      <span class="eyebrow">${esc(BRAND.heroEyebrow)}</span>
       <h1 class="wordmark">JASTAR HUB</h1>
       <p class="slogan-l">${esc(t('slogan'))}</p>
       <p class="lead">Профили молодых сотрудников, проекты и мероприятия советов, независимая экспертиза и открытые рейтинги, в которых баллы начисляются только за подтверждённые результаты.</p>
@@ -86,7 +96,7 @@ route('home', () => {
   </section>
   <div class="kpis k4">
     ${kpi('Молодых сотрудников в системе', fmt(young), 'до 35 лет · тестовая численность', 'users')}
-    ${kpi('Дочерних организаций', fmt(DB.orgs.filter((o) => o.type === 'portfolio').length), (() => { const n = DB.orgs.filter((o) => o.type === 'subsidiary').length; return `корпоративный центр и ${n} ${plural(n, 'филиал', 'филиала', 'филиалов')}`; })(), 'building')}
+    ${kpi(BRAND.kpiPortfolio, fmt(DB.orgs.filter((o) => o.type === 'portfolio').length), (() => { const n = DB.orgs.filter((o) => o.type === 'subsidiary').length; return BRAND.id === 'sk' ? `фонд и ${n} ДЗО` : `корпоративный центр и ${n} ${plural(n, 'филиал', 'филиала', 'филиалов')}`; })(), 'building')}
     ${kpi('Молодёжных советов', fmt(DB.orgs.length), (() => { const n = uniq(DB.orgs.map((o) => o.regionId)).length; return `${n} ${plural(n, 'регион', 'региона', 'регионов')} присутствия`; })(), 'flag')}
     ${kpi('Реализованных проектов', fmt(conf.length), 'подтверждены экспертами', 'folder')}
     ${kpi('Мероприятий', fmt(DB.events.length), `${upcoming.length} предстоящих`, 'calendar')}
@@ -102,6 +112,7 @@ route('home', () => {
     ${card('Динамика подтверждённой активности', chart('line', { labels: ms.map((m) => m.label), series: [{ name: 'Проекты', values: byMonth(conf, (p) => p.end) }, { name: 'Мероприятия', values: byMonth(confEv, (e) => e.date) }], h: 240 }), '<span class="muted sm">12 месяцев</span>')}
     ${card('Проекты по направлениям', hbars(catRows))}
   </div>
+  ${planBlock()}
   ${card('Лучшие проекты месяца', best.length ? `<div class="pgrid">${best.map(pcard).join('')}</div>` : emptyState('folder', 'Пока нет подтверждённых проектов за месяц', 'Они появятся после проверки экспертом.'), `<a class="lnk" href="#projects">Все проекты ${icon('chevR', 14)}</a>`)}
   <div class="grid g3">
     ${card('ТОП-5 сотрудников', `<ol class="toplist">${people.map((r) => { const x = U(r.userId); return `<li><span class="rk">${r.rank}</span><a href="#person-${x.id}" class="tl-m">${avatar(x, 34)}<span><b>${esc(x.name)}</b><small>${esc(orgLabel(x.companyId))}</small></span></a><b class="tl-v">${fmt1(r.total)}</b></li>`; }).join('')}</ol>`, `<a class="lnk" href="#leaders">ТОП-100 ${icon('chevR', 14)}</a>`)}
@@ -110,6 +121,7 @@ route('home', () => {
   </div>
   </div>`;
 });
+ACTIONS['go-plan'] = () => { UI.pr = { ...(UI.pr || {}), scope: 'plan', limit: 24 }; go('projects'); };
 ACTIONS['map-region'] = (el) => { UI.pr = { ...(UI.pr || {}), region: el.dataset.id, limit: 24 }; go('projects'); };
 
 /* ============================ КОМПАНИИ ============================ */
@@ -126,10 +138,10 @@ route('companies', () => {
   else { const ord = new Map(orgTree().map((o, i) => [o.id, i])); list.sort((a, b) => ord.get(a.id) - ord.get(b.id)); }
   const parents = DB.orgs.filter((o) => o.type === 'portfolio');
   return `<div class="page">
-  ${pageHead(t('companies'), 'Корпоративный центр, дочерние и зависимые организации группы АО «Самрук-Энерго», их филиалы и Молодёжные советы', can('company.edit') && myRole() === 'admin' ? `<a class="btn" href="#admin">${icon('plus', 16)}Добавить организацию</a>` : '')}
+  ${pageHead(t('companies'), BRAND.companiesLead, can('company.edit') && myRole() === 'admin' ? `<a class="btn" href="#admin">${icon('plus', 16)}Добавить организацию</a>` : '')}
   <div class="filters">
     <div class="f-search">${icon('search', 16)}<input id="co-q" type="search" placeholder="Название организации или отрасль" value="${esc(f.q)}" data-live="co.q"></div>
-    ${seg('co.type', [['', 'Все'], ['portfolio', 'Корпоративный центр и ДЗО'], ['subsidiary', 'Филиалы']], f.type)}
+    ${seg('co.type', [['', 'Все'], ['portfolio', BRAND.types.fund + ' и ' + BRAND.typesPlural.portfolio], ['subsidiary', BRAND.typesPlural.subsidiary]], f.type)}
     ${sel('co-parent', [['', 'Все организации'], ...parents.map((o) => [o.id, groupName(o)])], f.parent, 'data-live="co.parent"')}
     ${sel('co-region', regionOptions('Все регионы'), f.region, 'data-live="co.region"')}
     ${sel('co-sort', [['structure', 'По структуре группы'], ['rating', 'По месту в рейтинге']], f.sort, 'data-live="co.sort" aria-label="Порядок"')}
@@ -521,7 +533,7 @@ route('register', () => {
       ${fld('Корпоративный e-mail', inp('email', d.email || '', 'type="email" required autocomplete="email"'), '', true)}
       ${fld('Пароль', inp('password', '', 'type="password" required minlength="8" autocomplete="new-password"'), 'Не короче 8 символов', true)}
       <label class="check"><input type="checkbox" name="consent" ${d.consent ? 'checked' : ''} required><span>Даю согласие на сбор и обработку персональных данных в соответствии с Законом РК «О персональных данных и их защите»</span></label>
-      <label class="check"><input type="checkbox" name="age" ${d.age ? 'checked' : ''} required><span>Мне 35 лет или меньше, я работаю в корпоративном центре или дочерней организации АО «Самрук-Энерго»</span></label>`;
+      <label class="check"><input type="checkbox" name="age" ${d.age ? 'checked' : ''} required><span>${esc(BRAND.ageCheck)}</span></label>`;
   } else if (R.step === 2) {
     const roots = DB.orgs.filter((o) => o.type !== 'subsidiary');
     const root = d.root || '';

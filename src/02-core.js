@@ -4,7 +4,7 @@
    бэкенда меняется только реализация этих функций.
    ===================================================================== */
 
-const STORE_KEY = 'jastar-hub:v' + SCHEMA_VERSION;
+const STORE_KEY = BRAND.storeKey + ':v' + SCHEMA_VERSION;
 let DB = null;
 let DB_REV = 0;
 let STORAGE_OK = true;
@@ -19,7 +19,7 @@ function loadDB() {
     }
   } catch (e) { STORAGE_OK = false; }
   /* удаляем данные прежних версий (в том числе со старой структурой организаций) */
-  try { Object.keys(localStorage).filter((k) => k.startsWith('jastar-hub:v') && k !== STORE_KEY).forEach((k) => localStorage.removeItem(k)); } catch (e) { /* не критично */ }
+  try { Object.keys(localStorage).filter((k) => k.startsWith(BRAND.storeKey + ':v') && k !== STORE_KEY).forEach((k) => localStorage.removeItem(k)); } catch (e) { /* не критично */ }
   DB = seedDB();
   reindex();
   saveDB(true);
@@ -82,8 +82,8 @@ const familyOf = (id) => [id, ...childrenOf(id).map((o) => o.id)];
 const orgLabel = (id) => (O(id) ? O(id).name : '—');
 /* Структура группы: корпоративный центр (fund) → ДЗО (portfolio) → филиалы ДЗО (subsidiary) */
 const headId = () => ((DB.orgs || []).find((o) => o.type === 'fund') || { id: 'se' }).id;
-const orgTypeLabel = (o) => (!o ? '' : o.type === 'fund' ? 'Корпоративный центр' : o.type === 'portfolio' ? 'ДЗО' : 'Филиал ' + orgLabel(o.parentId));
-const groupName = (o) => { const n = DB.orgs.filter((x) => x.parentId === o.id && x.type === 'subsidiary').length; return o.name + (n ? (n > 1 ? ' с филиалами' : ' с филиалом') : ''); };
+const orgTypeLabel = (o) => (!o ? '' : o.type === 'fund' ? BRAND.types.fund : o.type === 'portfolio' ? BRAND.types.portfolio : BRAND.types.subsidiary + ' ' + orgLabel(o.parentId));
+const groupName = (o) => { const n = DB.orgs.filter((x) => x.parentId === o.id && x.type === 'subsidiary').length; return o.name + (n ? (BRAND.id === 'sk' ? ' с ДЗО' : n > 1 ? ' с филиалами' : ' с филиалом') : ''); };
 /* Порядок по структуре: корпоративный центр, затем каждое ДЗО со своими филиалами */
 function orgTree() {
   const out = DB.orgs.filter((o) => o.type === 'fund');
@@ -94,6 +94,8 @@ function orgTree() {
 const rootOptions = (allLabel) => [['', allLabel], ...DB.orgs.filter((o) => o.type !== 'subsidiary').map((o) => [o.id, groupName(o)])];
 const ABBR = { se: 'СЭ', qgp: 'QGP', pves: 'ПВЭС', ewp: 'EWP', sge: 'SGE', shges: 'ШГЭС', mges: 'МГЭС', ukges: 'УКГЭС', bges: 'БГЭС', shulges: 'ШуГЭС', azhk: 'АЖК', azhkes: 'ЭС', ales: 'АлЭС', egres: 'ГРЭС1', egres2: 'ГРЭС2', esc: 'ESC', escoco: 'ОЦО', semey: 'СмЭ', oskemen: 'ОсЭ', ktec: 'КТЭЦ' };
 const ORG_HUE = { se: 192, qgp: 150, pves: 168, ewp: 176, sge: 120, shges: 205, mges: 214, ukges: 222, bges: 230, shulges: 238, azhk: 32, ales: 4, egres: 268, egres2: 282, esc: 250, semey: 44, oskemen: 340, ktec: 20 };
+if (VARIANT && VARIANT.abbr) Object.assign(ABBR, VARIANT.abbr);
+if (VARIANT && VARIANT.hue) Object.assign(ORG_HUE, VARIANT.hue);
 function orgAbbr(o) {
   if (o.abbr) return o.abbr;
   if (ABBR[o.id]) return ABBR[o.id];

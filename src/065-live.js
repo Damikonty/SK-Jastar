@@ -9,7 +9,7 @@ const LIVE_CFG = {
   /* публичный ключ: предназначен для браузера, доступ ограничен правилами RLS в базе */
   key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVocndkY2FhZXl0cHZtZ3JqZmFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2NTQxODAsImV4cCI6MjEwOTIzMDE4MH0.Fp9drHq2Z_MHUoUALn_uI7IgpfEhyl0Z_Tb_vgOa__0'
 };
-const LIVE_EXPECTED = !!LIVE_CFG.url && !window.claude && (/^https?:$/.test(location.protocol) || !!window.__JASTAR_FORCE_LIVE);
+const LIVE_EXPECTED = !!LIVE_CFG.url && !window.claude && !window.__JASTAR_FORCE_DEMO && (/^https?:$/.test(location.protocol) || !!window.__JASTAR_FORCE_LIVE);
 const LIVE = LIVE_EXPECTED && !!(window.supabase && window.supabase.createClient);
 let sb = null;
 let LAST_LOAD = 0;

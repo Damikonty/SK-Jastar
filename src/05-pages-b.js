@@ -7,20 +7,26 @@ route('projects', () => {
   const f = (UI.pr = { q: '', cat: '', root: '', region: '', scope: 'confirmed', sort: 'new', limit: 24, ...(UI.pr || {}) });
   const u = me();
   let list = DB.projects.filter(canSeeActivity);
-  if (f.scope === 'confirmed' || !u) list = list.filter((p) => p.status === 'confirmed');
+  if (!u && !['confirmed', 'current', 'plan'].includes(f.scope)) f.scope = 'confirmed';
+  if (f.scope === 'confirmed') list = list.filter((p) => p.status === 'confirmed');
+  if (f.scope === 'current') list = list.filter((p) => p.status === 'planned' && p.start <= todayISO());
+  if (f.scope === 'plan') list = list.filter((p) => p.status === 'planned' && p.start > todayISO());
   if (f.scope === 'mine' && u) list = list.filter((p) => p.createdBy === u.id || p.leaderId === u.id || p.team.some((x) => x.userId === u.id));
-  if (f.scope === 'review' && u) list = list.filter((p) => p.status !== 'confirmed');
+  if (f.scope === 'review' && u) list = list.filter((p) => !['confirmed', 'planned'].includes(p.status));
   if (f.q) list = list.filter((p) => norm(p.title + ' ' + p.desc + ' ' + orgLabel(p.orgId)).includes(norm(f.q)));
   if (f.cat) list = list.filter((p) => p.category === f.cat);
   if (f.root) list = list.filter((p) => rootOf(p.orgId) === f.root || (p.partnerOrgIds || []).some((x) => rootOf(x) === f.root));
   if (f.region) list = list.filter((p) => p.regionId === f.region);
   if (f.sort === 'score') list.sort((a, b) => qProject(b) - qProject(a));
   else if (f.sort === 'reach') list.sort((a, b) => verifiedReach(b) - verifiedReach(a));
+  else if (f.scope === 'plan') list.sort((a, b) => a.start.localeCompare(b.start));
   else list.sort((a, b) => b.end.localeCompare(a.end));
   const shown = list.slice(0, f.limit);
-  const scopes = u ? [['confirmed', 'Подтверждённые'], ['all', 'Все доступные'], ['review', 'На проверке и черновики'], ['mine', 'Мои']] : [['confirmed', 'Подтверждённые']];
+  const hasPlan = DB.projects.some((p) => p.status === 'planned');
+  const planScopes = hasPlan ? [['current', 'Текущие'], ['plan', 'Запланированные']] : [];
+  const scopes = u ? [['confirmed', 'Подтверждённые'], ...planScopes, ['all', 'Все доступные'], ['review', 'На проверке и черновики'], ['mine', 'Мои']] : [['confirmed', 'Подтверждённые'], ...planScopes];
   return `<div class="page">
-    ${pageHead(t('projects'), 'Проекты и инициативы Молодёжных советов. Гости видят только подтверждённые экспертами проекты.', can('project.create') ? `<a class="btn primary" href="#project-new" data-act="project-new">${icon('plus', 16)}Добавить проект</a>` : '')}
+    ${pageHead(t('projects'), hasPlan ? 'Реализованные, текущие и запланированные проекты Молодёжных советов. В рейтинг идут только проекты, подтверждённые экспертами.' : 'Проекты и инициативы Молодёжных советов. Гости видят только подтверждённые экспертами проекты.', can('project.create') ? `<a class="btn primary" href="#project-new" data-act="project-new">${icon('plus', 16)}Добавить проект</a>` : '')}
     <div class="filters">
       <div class="f-search">${icon('search', 16)}<input id="pr-q" type="search" placeholder="Название, описание или компания" value="${esc(f.q)}" data-live="pr.q"></div>
       ${sel('pr-cat', catOptions('Все направления'), f.cat, 'data-live="pr.cat"')}
@@ -28,7 +34,7 @@ route('projects', () => {
       ${sel('pr-region', regionOptions('Все регионы'), f.region, 'data-live="pr.region"')}
       ${sel('pr-sort', [['new', 'Сначала новые'], ['score', 'По оценке эксперта'], ['reach', 'По охвату']], f.sort, 'data-live="pr.sort" aria-label="Сортировка"')}
     </div>
-    ${u ? seg('pr.scope', scopes, f.scope) : ''}
+    ${u || hasPlan ? seg('pr.scope', scopes, f.scope) : ''}
     <p class="count">${list.length} ${plural(list.length, 'проект', 'проекта', 'проектов')}${f.region ? ` · ${esc(RG(f.region).name)} <button class="lnk" data-act="clear" data-k="pr.region">сбросить регион</button>` : ''}</p>
     ${shown.length ? `<div class="pgrid">${shown.map(pcard).join('')}</div>` : emptyState('folder', 'Проектов по этим условиям нет', 'Измените фильтры или добавьте свой проект.')}
     ${list.length > shown.length ? `<div class="more"><button class="btn" data-act="more" data-k="pr">Показать ещё</button></div>` : ''}
@@ -57,7 +63,7 @@ route('project', (id) => {
     <nav class="crumbs"><a href="#projects">${esc(t('projects'))}</a> / <span>${esc(p.title)}</span></nav>
     <header class="proj-h" style="--c:${c.color}">
       <div class="proj-cover">${photo ? `<img alt="" data-media="${photo.key}">` : icon(c.icon, 40)}</div>
-      <div class="grow"><div class="chips">${catChip(p.category)}${statusChip(p.status)}${partners.length ? chip('Межкорпоративный', 'accent', 'link') : ''}${appeal ? chip('Апелляция на рассмотрении', 'warn') : ''}${p.demo ? testChip() : ''}</div>
+      <div class="grow"><div class="chips">${catChip(p.category)}${statusChip(p.status, p)}${partners.length ? chip('Межкорпоративный', 'accent', 'link') : ''}${appeal ? chip('Апелляция на рассмотрении', 'warn') : ''}${p.demo ? testChip() : ''}</div>
         <h1>${esc(p.title)}</h1>
         <p class="sub">${orgLink(p.companyId)}${p.orgId !== p.companyId ? ` · ${orgLink(p.orgId)}` : ''} · ${esc((RG(p.regionId) || {}).name)} · ${fmtDate(p.start)} — ${fmtDate(p.end)}</p></div>
       <div class="btn-row">

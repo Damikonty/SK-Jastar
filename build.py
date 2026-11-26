@@ -49,3 +49,14 @@ html = f'''<!doctype html>
 '''
 (ROOT / 'index.html').write_text(html, encoding='utf-8')
 print(f'index.html: {len(html) // 1024} KB')
+
+# Показательная версия для всей группы «Самрук-Қазына»: только демо-режим, без общей базы
+variant = (SRC / 'variant-sk.js').read_text(encoding='utf-8')
+sk_html = html.replace(f'<script src="{SUPABASE_JS}"></script>\n', '')
+sk_html = sk_html.replace('<title>JASTAR HUB</title>', '<title>JASTAR HUB · Самрук-Қазына</title>')
+sk_html = sk_html.replace('Единая цифровая платформа Молодёжного совета группы компаний АО «Самрук-Энерго»', 'Показательная версия единой цифровой платформы Молодёжных советов группы АО «Самрук-Қазына»')
+sk_html = sk_html.replace('<b>ТЕСТ</b> · Демо-версия: люди, показатели и рейтинги вымышлены, изменения хранятся только в вашем браузере.', '<b>ТЕСТ</b> · Показательная версия для группы «Самрук-Қазына»: люди, проекты, мероприятия и рейтинги вымышлены, изменения хранятся только в вашем браузере.')
+sk_html = sk_html.replace('<script>\n"use strict";\n', '<script>\n"use strict";\n' + variant + '\n', 1)
+(ROOT / 'sk').mkdir(exist_ok=True)
+(ROOT / 'sk' / 'index.html').write_text(sk_html, encoding='utf-8')
+print(f'sk/index.html: {len(sk_html) // 1024} KB')

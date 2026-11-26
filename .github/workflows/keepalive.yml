@@ -1,0 +1,22 @@
+# Не даёт бесплатной базе Supabase уснуть: на бесплатном тарифе проект
+# приостанавливается после 7 дней без обращений. Раз в два дня делаем
+# лёгкий запрос к публичному справочнику организаций.
+# Ключ ниже — публичный (anon), он и так встроен в сайт; секретный ключ здесь не нужен.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: '17 3 */2 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Запрос к базе
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVocndkY2FhZXl0cHZtZ3JqZmFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM2NTQxODAsImV4cCI6MjEwOTIzMDE4MH0.Fp9drHq2Z_MHUoUALn_uI7IgpfEhyl0Z_Tb_vgOa__0" \
+            "https://ehrwdcaaeytpvmgrjfal.supabase.co/rest/v1/organizations?select=id&limit=1")
+          echo "Ответ базы: $code"
+          test "$code" = "200"
